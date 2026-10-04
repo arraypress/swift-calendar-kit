@@ -13,14 +13,17 @@ struct DayNumber: View {
     let calendar: Calendar
     var isSelected = false
     var font: Font = .callout
+    @ScaledMetric(relativeTo: .callout) private var size: CGFloat = 30
 
     var body: some View {
         let today = calendar.isToday(day)
         Text(calendar.dayNumber(day))
             .font(font.weight(today || isSelected ? .semibold : .regular))
             .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
             .foregroundStyle(foreground(today: today))
-            .frame(width: 30, height: 30)
+            .frame(width: min(size, 44), height: min(size, 44))  // grows with the text, but a week of them still fits a phone
             .background {
                 if isSelected { Circle().fill(today ? style.todayColor : style.selectionColor) }
             }

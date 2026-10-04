@@ -17,6 +17,7 @@ public struct BoardRowLabel: View {
             Text(name)
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(1)
+                .minimumScaleFactor(0.75)
             HStack(spacing: 6) {
                 Capsule()
                     .fill(.quaternary)

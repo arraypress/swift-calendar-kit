@@ -51,7 +51,7 @@ public struct DayView<Event: CalendarEvent, Tile: View>: View {
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.bottom, 6)
             Divider()
-            AllDayLanes(days: [calendar.startOfDay(for: date)], events: events, calendar: calendar, tile: tile, onSelect: onSelect)
+            AllDayLanes(days: [calendar.startOfDay(for: date)], events: events, calendar: calendar, secondZone: secondTimeZone != nil, tile: tile, onSelect: onSelect)
             Timeline(days: [calendar.startOfDay(for: date)], events: events, calendar: calendar, hours: hours, secondZone: secondTimeZone, tile: tile, onSelect: onSelect)
         }
     }

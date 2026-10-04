@@ -57,7 +57,7 @@ public struct WeekView<Event: CalendarEvent, Tile: View>: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             HStack(spacing: 0) {
-                Color.clear.frame(width: style.hourLabelWidth, height: 1)
+                Color.clear.frame(width: style.labelColumnWidth(secondZone: secondTimeZone != nil), height: 1)
                 ForEach(days, id: \.self) { day in
                     Button { date = day } label: {
                         VStack(spacing: 2) {
@@ -76,7 +76,7 @@ public struct WeekView<Event: CalendarEvent, Tile: View>: View {
             }
             .padding(.bottom, 4)
             Divider()
-            AllDayLanes(days: days, events: events, calendar: calendar, tile: tile, onSelect: onSelect)
+            AllDayLanes(days: days, events: events, calendar: calendar, secondZone: secondTimeZone != nil, tile: tile, onSelect: onSelect)
             Timeline(days: days, events: events, calendar: calendar, selectedDay: date, hours: hours, secondZone: secondTimeZone, tile: tile, onSelect: onSelect)
         }
         .swipeToStep(move)

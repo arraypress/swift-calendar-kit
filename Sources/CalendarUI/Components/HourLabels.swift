@@ -26,20 +26,24 @@ struct HourLabels: View {
         ZStack(alignment: .topTrailing) {
             Color.clear
             ForEach(marks) { mark in
-                HStack(spacing: 4) {
-                    if let other {
-                        Text(mark.hour == 0 ? abbreviation(other.timeZone) : other.hourLabel(mark.date))
-                            .foregroundStyle(.tertiary)
-                            .frame(maxWidth: .infinity, alignment: .trailing)
+                // Spaced down by a clear block rather than padded, so the
+                // label's own frame sits on its line and scrollTo lands there.
+                VStack(alignment: .trailing, spacing: 0) {
+                    Color.clear.frame(height: max(mark.position * height - 7, 0))
+                    HStack(spacing: 4) {
+                        if let other {
+                            Text(mark.hour == 0 ? abbreviation(other.timeZone) : other.hourLabel(mark.date))
+                                .foregroundStyle(.tertiary)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                        }
+                        Text(mark.hour == 0 ? (other == nil ? "" : abbreviation(calendar.timeZone)) : calendar.hourLabel(mark.date))
+                            .foregroundStyle(.secondary)
+                            .frame(minWidth: other == nil ? 0 : style.hourLabelWidth * 0.8, alignment: .trailing)
                     }
-                    Text(mark.hour == 0 ? (other == nil ? "" : abbreviation(calendar.timeZone)) : calendar.hourLabel(mark.date))
-                        .foregroundStyle(.secondary)
-                        .frame(minWidth: other == nil ? 0 : style.hourLabelWidth * 0.8, alignment: .trailing)
-                }
                     .font(.caption2)
                     .padding(.trailing, 6)
-                    .padding(.top, max(mark.position * height - 7, 0))  // padding, not offset: scrollTo needs the real frame
                     .id(mark.hour)
+                }
             }
         }
         .frame(height: height)

@@ -25,7 +25,9 @@ struct CalendarDemoApp: App {
     var body: some Scene {
         WindowGroup("CalendarKit") {
             DemoView()
+                #if os(macOS)
                 .frame(minWidth: 420, minHeight: 640)
+                #endif
         }
     }
 }

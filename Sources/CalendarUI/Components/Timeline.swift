@@ -27,7 +27,7 @@ struct Timeline<Event: CalendarEvent, Tile: View>: View {
             ScrollView(.vertical) {
                 HStack(alignment: .top, spacing: 0) {
                     HourLabels(day: days.first ?? .now, calendar: calendar, secondZone: secondZone)
-                        .frame(width: style.hourLabelWidth * (secondZone == nil ? 1 : 1.8))
+                        .frame(width: style.labelColumnWidth(secondZone: secondZone != nil))
                     ForEach(Array(days.enumerated()), id: \.element) { index, day in
                         DayColumn(day: day, index: index, dayCount: days.count, events: events, calendar: calendar,
                                   isSelectedDay: days.count > 1 && selectedDay.map { calendar.isDate($0, inSameDayAs: day) } == true,

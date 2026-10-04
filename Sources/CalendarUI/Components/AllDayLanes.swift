@@ -11,9 +11,11 @@ import SwiftUI
 struct AllDayLanes<Event: CalendarEvent, Tile: View>: View {
 
     @Environment(\.calendarStyle) private var style
+    @ScaledMetric(relativeTo: .caption) private var textScale: CGFloat = 1
     let days: [Date]
     let events: [Event]
     let calendar: Calendar
+    var secondZone = false
     let tile: (Event) -> Tile
     let onSelect: ((Event) -> Void)?
 
@@ -27,12 +29,12 @@ struct AllDayLanes<Event: CalendarEvent, Tile: View>: View {
                 Text("all-day", bundle: .module)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .frame(width: style.hourLabelWidth, alignment: .trailing)
                     .padding(.trailing, 6)
+                    .frame(width: style.labelColumnWidth(secondZone: secondZone), alignment: .trailing)
                     .padding(.top, 4)
                 GeometryReader { geometry in
                     let column = geometry.size.width / CGFloat(max(days.count, 1))
-                    let bar = style.allDayBarHeight
+                    let bar = barHeight
                     ZStack(alignment: .topLeading) {
                         ForEach(layout.bars) { placed in
                             tile(placed.event)
@@ -52,9 +54,12 @@ struct AllDayLanes<Event: CalendarEvent, Tile: View>: View {
                         }
                     }
                 }
-                .frame(height: rows * style.allDayBarHeight)
+                .frame(height: rows * barHeight)
             }
             .padding(.vertical, 4)
         }
     }
+
+    /// The style's bar height, grown with larger text so a title still fits.
+    private var barHeight: CGFloat { style.allDayBarHeight * max(textScale, 1) }
 }

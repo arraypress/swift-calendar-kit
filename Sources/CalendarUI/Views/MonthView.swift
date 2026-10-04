@@ -82,31 +82,40 @@ public struct MonthView<Event: CalendarEvent>: View {
                 }
             }
             .padding(.bottom, 4)
-            if monthStyle == .titles {
-                VStack(spacing: 0) {
-                    ForEach(Array(grid.weeks.enumerated()), id: \.offset) { row, week in
-                        Divider()
-                        HStack(alignment: .top, spacing: 0) {
-                            if let weekNumbers { WeekNumber(weekNumbers[row]) }
-                            TitledWeek(week, perDay: Array(perDay[(row * 7)..<(row * 7 + 7)]))
-                        }
+            // The weeks scroll only when large text makes them taller than the space.
+            ViewThatFits(in: .vertical) {
+                Weeks(grid, perDay: perDay, weekNumbers: weekNumbers)
+                ScrollView { Weeks(grid, perDay: perDay, weekNumbers: weekNumbers) }
+            }
+        }
+        .swipeToStep(vertical: true, move)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)  // six weeks of seven days can't grow further on a phone
+    }
+
+    @ViewBuilder private func Weeks(_ grid: MonthGrid, perDay: [[Event]], weekNumbers: [Int]?) -> some View {
+        if monthStyle == .titles {
+            VStack(spacing: 0) {
+                ForEach(Array(grid.weeks.enumerated()), id: \.offset) { row, week in
+                    Divider()
+                    HStack(alignment: .top, spacing: 0) {
+                        if let weekNumbers { WeekNumber(weekNumbers[row]) }
+                        TitledWeek(week, perDay: Array(perDay[(row * 7)..<(row * 7 + 7)]))
                     }
                 }
-            } else {
-                Grid(horizontalSpacing: 0, verticalSpacing: 0) {
-                    ForEach(Array(grid.weeks.enumerated()), id: \.offset) { row, week in
-                        Divider()
-                        GridRow {
-                            if let weekNumbers { WeekNumber(weekNumbers[row]) }
-                            ForEach(Array(week.enumerated()), id: \.element.id) { column, day in
-                                DayCell(day: day, events: perDay[row * 7 + column])
-                            }
+            }
+        } else {
+            Grid(horizontalSpacing: 0, verticalSpacing: 0) {
+                ForEach(Array(grid.weeks.enumerated()), id: \.offset) { row, week in
+                    Divider()
+                    GridRow {
+                        if let weekNumbers { WeekNumber(weekNumbers[row]) }
+                        ForEach(Array(week.enumerated()), id: \.element.id) { column, day in
+                            DayCell(day: day, events: perDay[row * 7 + column])
                         }
                     }
                 }
             }
         }
-        .swipeToStep(vertical: true, move)
     }
 
     private func DayCell(day: GridDay, events: [Event]) -> some View {
