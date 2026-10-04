@@ -20,6 +20,9 @@ public enum TimetableError: Error, Sendable, Hashable, CustomStringConvertible {
     /// A window that closes at or before it opens.
     case badWindow(opens: DayTime, closes: DayTime)
 
+    /// Text that is not an iCalendar file: no `BEGIN:VCALENDAR` or `BEGIN:VEVENT`.
+    case notICalendar
+
     public var description: String {
         switch self {
         case let .badDay(year, month, day):
@@ -30,6 +33,8 @@ public enum TimetableError: Error, Sendable, Hashable, CustomStringConvertible {
             return "\"\(text)\" is not a time; use HH:mm, such as 09:30"
         case let .badWindow(opens, closes):
             return "a window from \(opens) to \(closes) closes before it opens; split a window across midnight into two days"
+        case .notICalendar:
+            return "this is not an iCalendar file: there is no BEGIN:VCALENDAR or BEGIN:VEVENT in it"
         }
     }
 }

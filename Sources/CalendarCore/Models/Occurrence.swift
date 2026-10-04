@@ -53,9 +53,8 @@ extension Occurrence: Equatable where Event: Equatable {
 
 extension CalendarEvent {
 
-    /// Whether this is a ``RecurringEvent`` (or an ``Occurrence`` of one)
-    /// that actually repeats — what a view checks to draw the repeat badge
-    /// and to ask "this event or all events?".
+    /// By default, whether this is a ``RecurringEvent`` (or an ``Occurrence``
+    /// of one) that actually repeats.
     public var isRecurring: Bool {
         (self as? any RecurringEvent)?.recurrence != nil
     }

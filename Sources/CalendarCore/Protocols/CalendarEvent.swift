@@ -24,6 +24,12 @@ public protocol CalendarEvent: Identifiable {
 
     /// Whether it belongs in the all-day row rather than on the timeline.
     var isAllDay: Bool { get }
+
+    /// Whether it is one of a repeating series — the ↻ badge, and the
+    /// "this event or all events?" question when it is moved or deleted.
+    /// A ``RecurringEvent`` answers from its rule; an event whose occurrences
+    /// come already expanded, such as one from Apple Calendar, says so itself.
+    var isRecurring: Bool { get }
 }
 
 extension CalendarEvent {
