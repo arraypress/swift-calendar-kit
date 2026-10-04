@@ -91,4 +91,22 @@ enum FreeTime {
             return open && clashes(candidate, with: busy[resource] ?? [], buffer: buffer).isEmpty
         }
     }
+
+    /// Timed events that overlap another, or come within `buffer` of one, in
+    /// the same group. Sorted by start, each is compared with those still
+    /// open, so it stays close to linear for a real diary.
+    static func conflicts<E: CalendarEvent>(_ events: [E], buffer: TimeInterval, sameGroup: (E, E) -> Bool) -> Set<E.ID> {
+        let timed = events.filter { !$0.isAllDay }.sorted { $0.start < $1.start }
+        var flagged = Set<E.ID>()
+        var open: [E] = []
+        for event in timed {
+            open.removeAll { $0.end.addingTimeInterval(buffer) <= event.start }
+            for other in open where sameGroup(other, event) && event.start < other.end.addingTimeInterval(buffer) {
+                flagged.insert(other.id)
+                flagged.insert(event.id)
+            }
+            open.append(event)
+        }
+        return flagged
+    }
 }

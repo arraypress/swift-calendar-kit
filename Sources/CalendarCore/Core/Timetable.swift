@@ -166,6 +166,14 @@ public enum Timetable {
                                busy: busy, buffer: buffer, minimumFree: minimumFree)
     }
 
+    /// The timed events that clash: overlapping another, or closer to one
+    /// than `buffer`, among events `sameGroup` says compete — the same room,
+    /// the same person. All-day events are left out.
+    public static func conflicts<E: CalendarEvent>(_ events: [E], buffer: TimeInterval = 0,
+                                                   sameGroup: (E, E) -> Bool = { _, _ in true }) -> Set<E.ID> {
+        FreeTime.conflicts(events, buffer: buffer, sameGroup: sameGroup)
+    }
+
     /// The resources free for the whole of a candidate booking, in the order given.
     public static func freeResources<R: Hashable & Sendable>(
         for candidate: DateInterval, resources: [R], windows: [R: [DateInterval]], busy: [R: [DateInterval]] = [:],

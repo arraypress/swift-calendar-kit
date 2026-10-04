@@ -96,4 +96,39 @@ final class BookingTests: XCTestCase {
         XCTAssertEqual(Timetable.freeResources(for: interval("2026-09-04T11:30", "2026-09-04T12:30"),
                                                resources: ["alice", "bob"], windows: windows, busy: busy), ["bob"])
     }
+
+    // MARK: - Conflicts
+
+    private let diary = [
+        event("a", "2026-09-04T09:00", "2026-09-04T10:00"),
+        event("b", "2026-09-04T09:30", "2026-09-04T10:30"),
+        event("c", "2026-09-04T10:35", "2026-09-04T11:00"),
+        event("d", "2026-09-04T13:00", "2026-09-04T14:00"),
+        event("e", "2026-09-04T14:00", "2026-09-04T15:00"),
+        event("trip", "2026-09-04", "2026-09-05", allDay: true),
+    ]
+
+    func testOverlapsConflict() {
+        XCTAssertEqual(Timetable.conflicts(diary), ["a", "b"])
+    }
+
+    func testABufferCatchesEventsTooCloseTogether() {
+        XCTAssertEqual(Timetable.conflicts(diary, buffer: 10 * 60), ["a", "b", "c", "d", "e"])
+        XCTAssertEqual(Timetable.conflicts(diary, buffer: 4 * 60), ["a", "b", "d", "e"])
+    }
+
+    func testOnlyEventsInTheSameGroupCompete() {
+        let rooms = ["a": 1, "b": 2, "c": 2, "d": 1, "e": 2]
+        let found = Timetable.conflicts(diary, buffer: 10 * 60) { rooms[$0.id] == rooms[$1.id] }
+        XCTAssertEqual(found, ["b", "c"])
+    }
+
+    func testALongEventConflictsWithEverythingInside() {
+        let found = Timetable.conflicts([
+            event("day", "2026-09-04T08:00", "2026-09-04T18:00"),
+            event("x", "2026-09-04T09:00", "2026-09-04T09:30"),
+            event("y", "2026-09-04T16:00", "2026-09-04T16:30"),
+        ])
+        XCTAssertEqual(found, ["day", "x", "y"])
+    }
 }

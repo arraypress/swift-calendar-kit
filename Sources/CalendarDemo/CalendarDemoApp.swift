@@ -84,11 +84,11 @@ struct DemoView: View {
 
             switch screen {
             case .day:
-                DayView(events: items, date: $date, hours: Samples.officeHours, title: \.event.title, tint: \.event.color)
+                DayView(events: items, date: $date, hours: Samples.officeHours, secondTimeZone: Samples.secondZone, title: \.event.title, tint: \.event.color)
             case .week:
-                WeekView(events: items, date: $date, hours: Samples.officeHours, title: \.event.title, tint: \.event.color)
+                WeekView(events: items, date: $date, hours: Samples.officeHours, secondTimeZone: Samples.secondZone, title: \.event.title, tint: \.event.color)
             case .threeDay:
-                WeekView(events: items, date: $date, dayCount: 3, hours: Samples.officeHours, title: \.event.title, tint: \.event.color)
+                WeekView(events: items, date: $date, dayCount: 3, hours: Samples.officeHours, secondTimeZone: Samples.secondZone, title: \.event.title, tint: \.event.color)
             case .list:
                 AgendaView(events: items, date: $date, title: \.event.title, tint: \.event.color)
             case .board:
@@ -172,6 +172,10 @@ struct DemoView: View {
             bookings.append(copy)
         })
         .calendarUndo($bookings)
+        .calendarConflicts(Item.self, buffer: 30 * 60) { a, b in
+            // Jobs at the same property clash; different properties never do.
+            !a.event.property.isEmpty && a.event.property == b.event.property
+        }
         .calendarEventDetail { (item: Item) in
             EventDetailView(item, title: item.event.title, tint: item.event.color) {
                 BookingExtras(booking: item.event)
@@ -328,6 +332,9 @@ enum Samples {
     }()
 
     static let staff = ["Sam", "Priya", "Jordan"]
+
+    /// The owner's partner office, for the second column of hours.
+    static let secondZone = TimeZone(identifier: "America/New_York")
 
     /// Each agent's shifts.
     static func shifts(_ person: String) -> OpeningHours {

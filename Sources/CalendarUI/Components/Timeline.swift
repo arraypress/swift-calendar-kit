@@ -12,11 +12,13 @@ struct Timeline<Event: CalendarEvent, Tile: View>: View {
 
     @Environment(\.calendarStyle) private var style
     @Environment(\.calendarEditor) private var editor
+    @Environment(\.conflictRule) private var conflictRule
     let days: [Date]
     let events: [Event]
     let calendar: Calendar
     var selectedDay: Date? = nil
     var hours: OpeningHours? = nil
+    var secondZone: TimeZone? = nil
     let tile: (Event) -> Tile
     let onSelect: ((Event) -> Void)?
 
@@ -24,8 +26,8 @@ struct Timeline<Event: CalendarEvent, Tile: View>: View {
         ScrollViewReader { proxy in
             ScrollView(.vertical) {
                 HStack(alignment: .top, spacing: 0) {
-                    HourLabels(day: days.first ?? .now, calendar: calendar)
-                        .frame(width: style.hourLabelWidth)
+                    HourLabels(day: days.first ?? .now, calendar: calendar, secondZone: secondZone)
+                        .frame(width: style.hourLabelWidth * (secondZone == nil ? 1 : 1.8))
                     ForEach(Array(days.enumerated()), id: \.element) { index, day in
                         DayColumn(day: day, index: index, dayCount: days.count, events: events, calendar: calendar,
                                   isSelectedDay: days.count > 1 && selectedDay.map { calendar.isDate($0, inSameDayAs: day) } == true,
@@ -34,6 +36,7 @@ struct Timeline<Event: CalendarEvent, Tile: View>: View {
                     }
                 }
                 .padding(.vertical, 10)
+                .environment(\.conflicts, ConflictSet(ids: conflictRule?.find(events) ?? []))
             }
             .onAppear {
                 editor?.calendar = calendar
@@ -49,16 +52,30 @@ private struct HourLabels: View {
     @Environment(\.calendarStyle) private var style
     let day: Date
     let calendar: Calendar
+    var secondZone: TimeZone? = nil
 
     var body: some View {
         let marks = Timetable.hourMarks(on: day, calendar: calendar)
         let height = height(of: day)
+        let other = secondZone.map { zone -> Calendar in
+            var copy = calendar
+            copy.timeZone = zone
+            return copy
+        }
         ZStack(alignment: .topTrailing) {
             Color.clear
             ForEach(marks) { mark in
-                Text(mark.hour == 0 ? "" : calendar.hourLabel(mark.date))
+                HStack(spacing: 4) {
+                    if let other {
+                        Text(mark.hour == 0 ? abbreviation(other.timeZone) : other.hourLabel(mark.date))
+                            .foregroundStyle(.tertiary)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                    Text(mark.hour == 0 ? (other == nil ? "" : abbreviation(calendar.timeZone)) : calendar.hourLabel(mark.date))
+                        .foregroundStyle(.secondary)
+                        .frame(minWidth: other == nil ? 0 : style.hourLabelWidth * 0.8, alignment: .trailing)
+                }
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
                     .padding(.trailing, 6)
                     .padding(.top, max(mark.position * height - 7, 0))  // padding, not offset: scrollTo needs the real frame
                     .id(mark.hour)
@@ -69,6 +86,11 @@ private struct HourLabels: View {
 
     private func height(of day: Date) -> CGFloat {
         CGFloat(calendar.dateInterval(of: .day, for: day)!.duration / 3600) * style.hourHeight
+    }
+
+    /// "BST", or the zone's name when it has no short form here.
+    private func abbreviation(_ zone: TimeZone) -> String {
+        zone.abbreviation(for: day) ?? zone.identifier
     }
 }
 
@@ -148,6 +170,7 @@ private struct DayColumn<Event: CalendarEvent, Tile: View>: View {
                 ForEach(layout.timed) { placement in
                     let tileHeight = max(placement.height * height - 2, 0)
                     tile(placement.event)
+                        .conflictOutline(placement.event.id)
                         .selectable(placement.event, calendar: calendar, onSelect: onSelect)
                         .modifier(TimedDrag(event: placement.event, height: tileHeight, columnWidth: width,
                                             days: (-index)...(dayCount - 1 - index), secondsPerPoint: layout.day.duration / height,
