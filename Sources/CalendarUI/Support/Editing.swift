@@ -24,9 +24,18 @@ final class CalendarEditor {
     var canReschedule = false
     var canDelete = false
     var canCreate = false
+    var canCopy = false
+    /// Where a paste lands: the time or day last clicked on.
+    var pasteTarget: PasteTarget?
+    /// The event last copied or cut, inside this calendar.
+    var clipboard: Any?
     var reschedule: (Any, DateInterval) -> Void = { _, _ in }
     var delete: (Any) -> Void = { _ in }
     var create: (DateInterval) -> Void = { _ in }
+    var copy: (Any) -> Void = { _ in }
+    var cut: (Any) -> Void = { _ in }
+    var duplicate: (Any) -> Void = { _ in }
+    var paste: () -> Void = {}
     var selectionChanged: (AnyHashable?) -> Void = { _ in }
 
     func select(_ event: Any?, id: AnyHashable?) {
@@ -37,6 +46,12 @@ final class CalendarEditor {
 
     func isSelected<ID: Hashable>(_ id: ID) -> Bool { selectedID == AnyHashable(id) }
     func isDragging<ID: Hashable>(_ id: ID) -> Bool { draggingID == AnyHashable(id) }
+}
+
+/// A time (or a whole day) a paste should land on.
+struct PasteTarget {
+    var date: Date
+    var isDay: Bool
 }
 
 private struct CalendarEditorKey: EnvironmentKey {
@@ -62,21 +77,27 @@ extension View {
     ///   "This Event, This and Following, or All Events?"; the answer arrives
     ///   as the ``EditScope``. One-off events always get `.thisEvent`.
     ///
+    /// - Copy, cut and paste (Cmd-C, Cmd-X, Cmd-V) and duplicate (Cmd-D), or
+    ///   from the context menu: a paste lands on the time or day last clicked.
+    ///
     /// Leave a closure out and that edit is off: no `onReschedule`, no dragging.
     ///
     /// - Parameters:
     ///   - selection: the selected event's id, or nil.
     ///   - snapping: what drags snap to, in seconds; 15 minutes by default.
+    ///   - onCopy: make a copy of an event at an interval — what paste and
+    ///     duplicate both ask for.
     public func calendarEditing<Event: CalendarEvent>(
         _ type: Event.Type = Event.self,
         selection: Binding<Event.ID?>,
         snapping: TimeInterval = 15 * 60,
         onReschedule: ((Event, DateInterval, EditScope) -> Void)? = nil,
         onDelete: ((Event, EditScope) -> Void)? = nil,
-        onCreate: ((DateInterval) -> Void)? = nil
+        onCreate: ((DateInterval) -> Void)? = nil,
+        onCopy: ((Event, DateInterval) -> Void)? = nil
     ) -> some View where Event.ID: Sendable {
         modifier(EditingHost(selection: selection, snap: snapping, onReschedule: onReschedule,
-                             onDelete: onDelete, onCreate: onCreate))
+                             onDelete: onDelete, onCreate: onCreate, onCopy: onCopy))
     }
 }
 
@@ -89,6 +110,7 @@ struct EditingHost<Event: CalendarEvent>: ViewModifier where Event.ID: Sendable 
     let onReschedule: ((Event, DateInterval, EditScope) -> Void)?
     let onDelete: ((Event, EditScope) -> Void)?
     let onCreate: ((DateInterval) -> Void)?
+    let onCopy: ((Event, DateInterval) -> Void)?
 
     @Environment(\.calendarUndo) private var undo
     @State private var editor = CalendarEditor()
@@ -146,6 +168,12 @@ struct EditingHost<Event: CalendarEvent>: ViewModifier where Event.ID: Sendable 
                 return .handled
             }
             #endif
+            #if os(macOS)
+            .onCopyCommand { copySelected() }
+            .onCutCommand { cutSelected() }
+            .onPasteCommand(of: [.plainText]) { _ in paste() }
+            #endif
+            .background { shortcuts }
             .onAppear(perform: configure)
             .onChange(of: selection) { _, id in
                 if editor.selectedID != id.map(AnyHashable.init) {
@@ -179,12 +207,85 @@ struct EditingHost<Event: CalendarEvent>: ViewModifier where Event.ID: Sendable 
         editor.create = { interval in
             recordingUndo(undo, String(localized: "New Event")) { onCreate?(interval) }
         }
+        editor.canCopy = onCopy != nil
+        editor.copy = { value in if value is Event { editor.clipboard = value } }
+        editor.cut = { value in
+            guard let event = value as? Event else { return }
+            editor.clipboard = event
+            request(.delete(event))
+        }
+        editor.duplicate = { value in
+            guard let event = value as? Event else { return }
+            recordingUndo(undo, String(localized: "Duplicate Event")) {
+                onCopy?(event, DateInterval(start: event.start, end: max(event.end, event.start)))
+            }
+        }
+        editor.paste = { paste() }
         editor.selectionChanged = { id in
             selection = id?.base as? Event.ID
             #if !os(watchOS)
             if id != nil { focused = true }
             #endif
         }
+    }
+
+    // MARK: - Copy and paste
+
+    /// Keyboard shortcuts with no menu item of their own to hang on:
+    /// duplicate everywhere, and copy, cut and paste where there is no Edit menu.
+    @ViewBuilder private var shortcuts: some View {
+        #if os(macOS) || os(iOS) || os(visionOS)
+        ZStack {
+            Button("Duplicate") { if let event = editor.selectedEvent { editor.duplicate(event) } }
+                .keyboardShortcut("d", modifiers: .command)
+            #if !os(macOS)
+            Button("Copy") { _ = copySelected() }.keyboardShortcut("c", modifiers: .command)
+            Button("Cut") { _ = cutSelected() }.keyboardShortcut("x", modifiers: .command)
+            Button("Paste") { paste() }.keyboardShortcut("v", modifiers: .command)
+            #endif
+        }
+        .frame(width: 0, height: 0)
+        .opacity(0)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+        .disabled(onCopy == nil && onDelete == nil)
+        #endif
+    }
+
+    @discardableResult
+    private func copySelected() -> [NSItemProvider] {
+        guard let event = editor.selectedEvent as? Event else { return [] }
+        editor.clipboard = event
+        return [NSItemProvider(object: Spoken.when(event, calendar: editor.calendar) as NSString)]
+    }
+
+    @discardableResult
+    private func cutSelected() -> [NSItemProvider] {
+        let items = copySelected()
+        if let event = editor.selectedEvent as? Event, onDelete != nil { request(.delete(event)) }
+        return items
+    }
+
+    /// The copied event, landed on the time or day last clicked: a timed
+    /// event keeps its length (and, landing on a whole day, its time of day);
+    /// an all-day event keeps its days.
+    private func paste() {
+        guard let event = editor.clipboard as? Event, let onCopy else { return }
+        let original = DateInterval(start: event.start, end: max(event.end, event.start))
+        let calendar = editor.calendar
+        let landing: DateInterval
+        if let target = editor.pasteTarget {
+            if event.isAllDay || target.isDay {
+                let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: original.start),
+                                                   to: calendar.startOfDay(for: target.date)).day ?? 0
+                landing = Timetable.moved(original, byDays: days, calendar: calendar)
+            } else {
+                landing = DateInterval(start: target.date, duration: original.duration)
+            }
+        } else {
+            landing = original
+        }
+        recordingUndo(undo, String(localized: "Paste Event")) { onCopy(event, landing) }
     }
 
     private func request(_ action: Pending) {

@@ -162,6 +162,14 @@ struct DemoView: View {
         }
         .calendarEditing(Item.self, selection: $selection, onReschedule: reschedule, onDelete: delete, onCreate: { interval in
             bookings.append(Booking(title: "New event", start: interval.start, end: interval.end, color: .accentColor))
+        }, onCopy: { item, interval in
+            // A copy is a one-off, even of an occurrence of a series.
+            var copy = item.event
+            copy.id = UUID()
+            copy.recurrence = nil
+            copy.start = interval.start
+            copy.end = interval.end
+            bookings.append(copy)
         })
         .calendarUndo($bookings)
         .calendarEventDetail { (item: Item) in

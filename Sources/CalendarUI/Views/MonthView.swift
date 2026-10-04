@@ -24,6 +24,7 @@ public enum MonthStyle: Sendable, Hashable {
 public struct MonthView<Event: CalendarEvent>: View {
 
     @Environment(\.calendarStyle) private var style
+    @Environment(\.calendarEditor) private var editor
     @Binding private var date: Date
     private let events: [Event]
     private let calendar: Calendar
@@ -151,7 +152,9 @@ public struct MonthView<Event: CalendarEvent>: View {
     @ScaledMetric(relativeTo: .caption2) private var laneHeight: CGFloat = 17
     @ScaledMetric(relativeTo: .subheadline) private var numberHeight: CGFloat = 36
 
-    /// One week: day numbers, bars across the days, then each day's timed events.
+    /// One week: day numbers, bars across the days, then each day's timed
+    /// events. With editing on, bars and lines drag to other days — across
+    /// columns and down into other weeks.
     private func TitledWeek(_ week: [GridDay], perDay: [[Event]]) -> some View {
         let days = week.map(\.date)
         let barLimit = max(style.monthPillLimit - 1, 1)
@@ -159,80 +162,97 @@ public struct MonthView<Event: CalendarEvent>: View {
         let barsHeight = CGFloat(lanes.laneCount) * laneHeight
         return GeometryReader { geometry in
             let column = geometry.size.width / 7
+            let row = geometry.size.height + 1
             ZStack(alignment: .topLeading) {
                 HStack(spacing: 0) {
                     ForEach(Array(week.enumerated()), id: \.element.id) { index, day in
                         TitledDay(day, timed: perDay[index].filter { !isBar($0) }, hiddenBars: lanes.hidden[index],
-                                  barsHeight: barsHeight, lanesShown: lanes.laneCount, total: perDay[index].count)
+                                  barsHeight: barsHeight, lanesShown: lanes.laneCount, total: perDay[index].count,
+                                  column: column, row: row)
                             .frame(width: column)
                     }
                 }
                 ForEach(lanes.bars) { bar in
                     Bar(bar)
                         .frame(width: max(column * CGFloat(bar.length) - 4, 0), height: laneHeight - 2)
-                        .offset(x: column * CGFloat(bar.firstDay) + 2, y: numberHeight + CGFloat(bar.lane) * laneHeight)
-                        .allowsHitTesting(false)
+                        .selectable(bar.event, calendar: calendar, onSelect: nil)
+                        .modifier(MonthDrag(event: bar.event, column: column, row: row, calendar: calendar))
+                        .padding(.leading, column * CGFloat(bar.firstDay) + 2)
+                        .padding(.top, numberHeight + CGFloat(bar.lane) * laneHeight)
                 }
             }
         }
         .frame(minHeight: numberHeight + CGFloat(style.monthPillLimit + 1) * laneHeight)
+        .zIndex(perDay.joined().contains { editor?.isDragging($0.id) == true } ? 1 : 0)
     }
 
     private func Bar(_ bar: LaneBar<Event>) -> some View {
         let leading: CGFloat = bar.continuesBefore ? 0 : 4
         let trailing: CGFloat = bar.continuesAfter ? 0 : 4
-        return Text(title(bar.event))
-            .font(.caption2.weight(.semibold))
-            .lineLimit(1)
-            .foregroundStyle(.white)
-            .padding(.horizontal, 5)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            .background(tint(bar.event), in: UnevenRoundedRectangle(
-                topLeadingRadius: leading, bottomLeadingRadius: leading,
-                bottomTrailingRadius: trailing, topTrailingRadius: trailing, style: .continuous))
+        return HStack(spacing: 3) {
+            Text(title(bar.event))
+                .font(.caption2.weight(.semibold))
+                .lineLimit(1)
+            if bar.event.isRecurring { RepeatBadge().foregroundStyle(.white.opacity(0.8)) }
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 5)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .background(tint(bar.event), in: UnevenRoundedRectangle(
+            topLeadingRadius: leading, bottomLeadingRadius: leading,
+            bottomTrailingRadius: trailing, topTrailingRadius: trailing, style: .continuous))
     }
 
-    private func TitledDay(_ day: GridDay, timed: [Event], hiddenBars: Int, barsHeight: CGFloat, lanesShown: Int, total: Int) -> some View {
+    private func TitledDay(_ day: GridDay, timed: [Event], hiddenBars: Int, barsHeight: CGFloat, lanesShown: Int, total: Int,
+                           column: CGFloat, row: CGFloat) -> some View {
         let lines = max(style.monthPillLimit + 1 - lanesShown, 1)
         let overflow = timed.count + hiddenBars > lines
         let shown = overflow ? max(lines - 1, 0) : timed.count
         let hidden = timed.count - shown + hiddenBars
-        return Button {
+        let choose = {
             date = day.date
+            editor?.select(nil, id: nil)
+            editor?.pasteTarget = PasteTarget(date: day.date, isDay: true)
             onSelectDay?(day.date)
-        } label: {
-            VStack(alignment: .leading, spacing: 0) {
+        }
+        return VStack(alignment: .leading, spacing: 0) {
+            Button(action: choose) {
                 DayNumber(day: day.date, calendar: calendar, isSelected: calendar.isDate(day.date, inSameDayAs: date), font: .subheadline)
                     .frame(maxWidth: .infinity)
                     .frame(height: numberHeight, alignment: .center)
-                Color.clear.frame(height: barsHeight)
-                ForEach(timed.prefix(shown)) { event in
-                    HStack(spacing: 3) {
-                        Circle().fill(tint(event)).frame(width: 5, height: 5)
-                        Text(title(event))
-                            .font(.caption2)
-                            .lineLimit(1)
-                        if event.isRecurring { RepeatBadge() }
-                    }
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(spokenDay(day.date, eventCount: total)))
+            .accessibilityAddTraits(calendar.isDate(day.date, inSameDayAs: date) ? .isSelected : [])
+            Color.clear.frame(height: barsHeight)
+            ForEach(timed.prefix(shown)) { event in
+                HStack(spacing: 3) {
+                    Circle().fill(tint(event)).frame(width: 5, height: 5)
+                    Text(title(event))
+                        .font(.caption2)
+                        .lineLimit(1)
+                    if event.isRecurring { RepeatBadge() }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: laneHeight)
+                .padding(.horizontal, 4)
+                .selectable(event, calendar: calendar, onSelect: nil)
+                .modifier(MonthDrag(event: event, column: column, row: row, calendar: calendar))
+            }
+            if hidden > 0 {
+                Text("+\(hidden) more")
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.secondary)
                     .frame(height: laneHeight)
                     .padding(.leading, 4)
-                }
-                if hidden > 0 {
-                    Text("+\(hidden) more")
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(.secondary)
-                        .frame(height: laneHeight)
-                        .padding(.leading, 4)
-                }
-                Spacer(minLength: 0)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .opacity(day.isInMonth ? 1 : 0.4)
-            .contentShape(Rectangle())
+            Spacer(minLength: 0)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(spokenDay(day.date, eventCount: total)))
-        .accessibilityAddTraits(calendar.isDate(day.date, inSameDayAs: date) ? .isSelected : [])
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .opacity(day.isInMonth ? 1 : 0.4)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: choose)
     }
 
     /// "Sunday 4 October, 3 events".
@@ -249,5 +269,38 @@ public struct MonthView<Event: CalendarEvent>: View {
         withAnimation(.snappy) {
             date = calendar.date(byAdding: .month, value: months, to: date) ?? date
         }
+    }
+}
+
+/// Moving an event in a month grid by dragging it: columns are days, rows are weeks.
+private struct MonthDrag<Event: CalendarEvent>: ViewModifier {
+
+    @Environment(\.calendarEditor) private var editor
+    let event: Event
+    let column: CGFloat
+    let row: CGFloat
+    let calendar: Calendar
+
+    @State private var offset: CGSize?
+
+    func body(content: Content) -> some View {
+        let across = offset.map { Int(($0.width / max(column, 1)).rounded()) } ?? 0
+        let down = offset.map { Int(($0.height / max(row, 1)).rounded()) } ?? 0
+        content
+            .offset(x: CGFloat(across) * column, y: CGFloat(down) * row)
+            .shadow(color: .black.opacity(offset == nil ? 0 : 0.3), radius: offset == nil ? 0 : 6, y: 3)
+            .editDrag(enabled: editor?.canReschedule == true) { step in
+                offset = step.translation
+                editor?.draggingID = AnyHashable(event.id)
+                if editor?.isSelected(event.id) == false { editor?.select(event, id: AnyHashable(event.id)) }
+            } onEnded: { _ in
+                let days = across + down * 7
+                if days != 0 {
+                    editor?.reschedule(event, Timetable.moved(DateInterval(start: event.start, end: max(event.end, event.start)),
+                                                              byDays: days, calendar: calendar))
+                }
+                offset = nil
+                editor?.draggingID = nil
+            }
     }
 }

@@ -100,7 +100,16 @@ private struct DayColumn<Event: CalendarEvent, Tile: View>: View {
                 Rectangle()
                     .fill(isSelectedDay ? Color.accentColor.opacity(0.05) : Color.clear)
                     .contentShape(Rectangle())
+                    #if os(tvOS)
                     .onTapGesture { editor?.select(nil, id: nil) }
+                    #else
+                    .onTapGesture(coordinateSpace: .local) { point in
+                        editor?.select(nil, id: nil)
+                        let seconds = TimeInterval(min(max(point.y, 0), height) / height) * layout.day.duration
+                        let snap = editor?.snap ?? 900
+                        editor?.pasteTarget = PasteTarget(date: layout.day.start.addingTimeInterval((seconds / snap).rounded(.down) * snap), isDay: false)
+                    }
+                    #endif
                     .editDrag(enabled: editor?.canCreate == true) { step in
                         sweep = (step.start.y, step.start.y + step.translation.height)
                     } onEnded: { step in

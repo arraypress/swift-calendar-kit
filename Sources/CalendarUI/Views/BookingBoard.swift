@@ -219,6 +219,7 @@ public struct BookingBoard<Resource: Hashable, Event: CalendarEvent, Label: View
                         .contentShape(Rectangle())
                         .onTapGesture {
                             editor?.select(nil, id: nil)
+                            editor?.pasteTarget = PasteTarget(date: days[day], isDay: true)
                             if row.isFree[day] { onSelectFree?(row.resource, days[day]) }
                         }
                 }

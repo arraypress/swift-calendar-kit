@@ -85,7 +85,13 @@ private struct Selectable<Event: CalendarEvent>: ViewModifier {
                 if detail?.build(event) != nil {
                     Button("Show Details", systemImage: "info.circle") { isShowing = true }
                 }
+                if let editor, editor.canCopy {
+                    Button("Copy", systemImage: "doc.on.doc") { editor.copy(event) }
+                    if editor.canDelete { Button("Cut", systemImage: "scissors") { editor.cut(event) } }
+                    Button("Duplicate", systemImage: "plus.square.on.square") { editor.duplicate(event) }
+                }
                 if let editor, editor.canDelete {
+                    Divider()
                     Button("Delete", systemImage: "trash", role: .destructive) { editor.delete(event) }
                 }
             }
