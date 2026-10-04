@@ -36,6 +36,7 @@ struct Timeline<Event: CalendarEvent, Tile: View>: View {
                 .padding(.vertical, 10)
             }
             .onAppear {
+                editor?.calendar = calendar
                 DispatchQueue.main.async { proxy.scrollTo(style.firstVisibleHour, anchor: .top) }
             }
         }
@@ -138,7 +139,7 @@ private struct DayColumn<Event: CalendarEvent, Tile: View>: View {
                 ForEach(layout.timed) { placement in
                     let tileHeight = max(placement.height * height - 2, 0)
                     tile(placement.event)
-                        .selectable(placement.event, onSelect: onSelect)
+                        .selectable(placement.event, calendar: calendar, onSelect: onSelect)
                         .modifier(TimedDrag(event: placement.event, height: tileHeight, columnWidth: width,
                                             days: (-index)...(dayCount - 1 - index), secondsPerPoint: layout.day.duration / height,
                                             calendar: calendar))
@@ -301,7 +302,7 @@ struct AllDayLanes<Event: CalendarEvent, Tile: View>: View {
                         ForEach(layout.bars) { placed in
                             tile(placed.event)
                                 .frame(width: column * CGFloat(placed.length) - 3, height: bar - 2)
-                                .selectable(placed.event, onSelect: onSelect)
+                                .selectable(placed.event, calendar: calendar, onSelect: onSelect)
                                 .modifier(DayDrag(event: placed.event, columnWidth: column, calendar: calendar))
                                 .padding(.leading, column * CGFloat(placed.firstDay) + 2)
                                 .padding(.top, CGFloat(placed.lane) * bar)

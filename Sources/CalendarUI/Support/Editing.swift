@@ -19,6 +19,8 @@ final class CalendarEditor {
     var selectedEvent: Any?
     var draggingID: AnyHashable?
     var snap: TimeInterval = 15 * 60
+    /// The calendar the views on screen work in, for keyboard day moves.
+    var calendar: Calendar = .current
     var canReschedule = false
     var canDelete = false
     var canCreate = false
@@ -122,6 +124,20 @@ struct EditingHost<Event: CalendarEvent>: ViewModifier where Event.ID: Sendable 
             .onKeyPress(keys: [.delete, .deleteForward]) { _ in
                 guard let event = editor.selectedEvent as? Event, onDelete != nil else { return .ignored }
                 request(.delete(event))
+                return .handled
+            }
+            .onKeyPress(keys: [.upArrow, .downArrow, .leftArrow, .rightArrow]) { press in
+                guard let event = editor.selectedEvent as? Event, onReschedule != nil else { return .ignored }
+                let original = DateInterval(start: event.start, end: max(event.end, event.start))
+                let moved: DateInterval
+                switch press.key {
+                case .upArrow where !event.isAllDay: moved = Timetable.moved(original, by: -snap, snap: snap, calendar: editor.calendar)
+                case .downArrow where !event.isAllDay: moved = Timetable.moved(original, by: snap, snap: snap, calendar: editor.calendar)
+                case .leftArrow: moved = Timetable.moved(original, byDays: -1, calendar: editor.calendar)
+                case .rightArrow: moved = Timetable.moved(original, byDays: 1, calendar: editor.calendar)
+                default: return .ignored
+                }
+                request(.reschedule(event, moved))
                 return .handled
             }
             .onKeyPress(.escape) {

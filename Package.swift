@@ -12,7 +12,7 @@ let package = Package(
         .library(name: "CalendarUI", targets: ["CalendarUI"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/arraypress/swift-chrono-kit.git", from: "0.11.0"),
+        .package(url: "https://github.com/arraypress/swift-chrono-kit.git", from: "0.12.0"),
     ],
     targets: [
         .target(name: "CalendarCore", dependencies: [.product(name: "ChronoKit", package: "swift-chrono-kit")]),

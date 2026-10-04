@@ -17,6 +17,7 @@ public struct BookingBoard<Resource: Hashable, Event: CalendarEvent, Label: View
     @Environment(\.calendarStyle) private var style
     @Environment(\.calendarEditor) private var editor
     @Environment(\.calendarUndo) private var undo
+    @ScaledMetric(relativeTo: .caption) private var textScale: CGFloat = 1
     @Binding private var date: Date
     @State private var width: CGFloat = 0
     @State private var drag: BarDrag?
@@ -149,9 +150,13 @@ public struct BookingBoard<Resource: Hashable, Event: CalendarEvent, Label: View
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .onAppear { editor?.calendar = calendar }
     }
 
     private let headerHeight: CGFloat = 52
+
+    /// One lane's height, grown with the reader's text size.
+    private var barUnit: CGFloat { style.boardBarHeight * max(textScale, 1) }
 
     /// Days widen to fill the window, never narrower than the style's
     /// minimum — below that the board scrolls sideways instead.
@@ -161,7 +166,7 @@ public struct BookingBoard<Resource: Hashable, Event: CalendarEvent, Label: View
     }
 
     private func height(of row: BoardRow<Resource, Event>) -> CGFloat {
-        CGFloat(max(row.lanes.laneCount, 1)) * style.boardBarHeight + 8
+        CGFloat(max(row.lanes.laneCount, 1)) * barUnit + 8
     }
 
     /// Where each row starts, counting the hairline dividers between them.
@@ -201,7 +206,7 @@ public struct BookingBoard<Resource: Hashable, Event: CalendarEvent, Label: View
 
     private func RowView(row: BoardRow<Resource, Event>, index: Int, rows: [BoardRow<Resource, Event>],
                          tops: [CGFloat], days: [Date]) -> some View {
-        let barHeight = style.boardBarHeight
+        let barHeight = barUnit
         let clashes = Set(row.clashingDays)
         let column = { (x: CGFloat) in min(max(Int(x / max(dayWidth, 1)), 0), days.count - 1) }
         return ZStack(alignment: .topLeading) {
@@ -250,7 +255,7 @@ public struct BookingBoard<Resource: Hashable, Event: CalendarEvent, Label: View
                 let moveShift = active?.stretching == false ? CGFloat(dayShift) : 0
                 bar(placed.event, placed)
                     .frame(width: max((end - start + stretchShift) * dayWidth - 3, 0), height: barHeight - 6)
-                    .selectable(placed.event, onSelect: onSelect)
+                    .selectable(placed.event, calendar: calendar, onSelect: onSelect)
                     .overlay(alignment: .trailing) {
                         if onMove != nil, editor?.isSelected(placed.event.id) == true, !placed.continuesAfter {
                             Capsule()

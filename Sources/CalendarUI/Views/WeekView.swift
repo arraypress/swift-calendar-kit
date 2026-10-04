@@ -67,6 +67,8 @@ public struct WeekView<Event: CalendarEvent, Tile: View>: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(Text(calendar.format(day) { $0.weekday(.wide).day().month(.wide) }))
+                    .accessibilityAddTraits(calendar.isDate(day, inSameDayAs: date) ? .isSelected : [])
                 }
             }
             .padding(.bottom, 4)

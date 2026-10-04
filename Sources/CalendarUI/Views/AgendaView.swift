@@ -57,7 +57,7 @@ public struct AgendaView<Event: CalendarEvent, Row: View>: View {
                             ForEach(day.entries) { entry in
                                 row(entry)
                                     .contentShape(Rectangle())
-                                    .selectable(entry.event, onSelect: onSelect)
+                                    .selectable(entry.event, calendar: calendar, onSelect: onSelect)
                                     .listRowInsets(EdgeInsets())
                             }
                         } header: {

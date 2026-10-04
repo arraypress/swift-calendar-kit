@@ -137,6 +137,8 @@ public struct MonthView<Event: CalendarEvent>: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(Text(spokenDay(day.date, eventCount: events.count)))
+        .accessibilityAddTraits(calendar.isDate(day.date, inSameDayAs: date) ? .isSelected : [])
     }
 
     // MARK: - Titles style
@@ -146,8 +148,8 @@ public struct MonthView<Event: CalendarEvent>: View {
         event.isAllDay || !calendar.isDate(event.start, inSameDayAs: event.end.addingTimeInterval(-1))
     }
 
-    private var laneHeight: CGFloat { 17 }
-    private var numberHeight: CGFloat { 36 }
+    @ScaledMetric(relativeTo: .caption2) private var laneHeight: CGFloat = 17
+    @ScaledMetric(relativeTo: .subheadline) private var numberHeight: CGFloat = 36
 
     /// One week: day numbers, bars across the days, then each day's timed events.
     private func TitledWeek(_ week: [GridDay], perDay: [[Event]]) -> some View {
@@ -161,7 +163,7 @@ public struct MonthView<Event: CalendarEvent>: View {
                 HStack(spacing: 0) {
                     ForEach(Array(week.enumerated()), id: \.element.id) { index, day in
                         TitledDay(day, timed: perDay[index].filter { !isBar($0) }, hiddenBars: lanes.hidden[index],
-                                  barsHeight: barsHeight, lanesShown: lanes.laneCount)
+                                  barsHeight: barsHeight, lanesShown: lanes.laneCount, total: perDay[index].count)
                             .frame(width: column)
                     }
                 }
@@ -180,7 +182,7 @@ public struct MonthView<Event: CalendarEvent>: View {
         let leading: CGFloat = bar.continuesBefore ? 0 : 4
         let trailing: CGFloat = bar.continuesAfter ? 0 : 4
         return Text(title(bar.event))
-            .font(.system(size: 10, weight: .semibold))
+            .font(.caption2.weight(.semibold))
             .lineLimit(1)
             .foregroundStyle(.white)
             .padding(.horizontal, 5)
@@ -190,7 +192,7 @@ public struct MonthView<Event: CalendarEvent>: View {
                 bottomTrailingRadius: trailing, topTrailingRadius: trailing, style: .continuous))
     }
 
-    private func TitledDay(_ day: GridDay, timed: [Event], hiddenBars: Int, barsHeight: CGFloat, lanesShown: Int) -> some View {
+    private func TitledDay(_ day: GridDay, timed: [Event], hiddenBars: Int, barsHeight: CGFloat, lanesShown: Int, total: Int) -> some View {
         let lines = max(style.monthPillLimit + 1 - lanesShown, 1)
         let overflow = timed.count + hiddenBars > lines
         let shown = overflow ? max(lines - 1, 0) : timed.count
@@ -208,7 +210,7 @@ public struct MonthView<Event: CalendarEvent>: View {
                     HStack(spacing: 3) {
                         Circle().fill(tint(event)).frame(width: 5, height: 5)
                         Text(title(event))
-                            .font(.system(size: 10))
+                            .font(.caption2)
                             .lineLimit(1)
                         if event.isRecurring { RepeatBadge() }
                     }
@@ -217,7 +219,7 @@ public struct MonthView<Event: CalendarEvent>: View {
                 }
                 if hidden > 0 {
                     Text("+\(hidden) more")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.caption2.weight(.medium))
                         .foregroundStyle(.secondary)
                         .frame(height: laneHeight)
                         .padding(.leading, 4)
@@ -229,6 +231,18 @@ public struct MonthView<Event: CalendarEvent>: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(Text(spokenDay(day.date, eventCount: total)))
+        .accessibilityAddTraits(calendar.isDate(day.date, inSameDayAs: date) ? .isSelected : [])
+    }
+
+    /// "Sunday 4 October, 3 events".
+    private func spokenDay(_ day: Date, eventCount: Int) -> String {
+        let name = calendar.format(day) { $0.weekday(.wide).day().month(.wide) }
+        switch eventCount {
+        case 0: return name
+        case 1: return String(localized: "\(name), 1 event")
+        default: return String(localized: "\(name), \(eventCount) events")
+        }
     }
 
     private func move(by months: Int) {
