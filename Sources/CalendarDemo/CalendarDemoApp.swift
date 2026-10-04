@@ -114,6 +114,7 @@ struct DemoView: View {
                              })
             case .month:
                 MonthView(events: items, date: $date, style: .titles, tint: \.event.color, title: \.event.title)
+                    .calendarStyle(Samples.monthStyle)
             case .year:
                 YearView(events: items, date: $date, tint: \.event.color) { _ in screen = .month }
             case .stays:
@@ -332,6 +333,13 @@ enum Samples {
     }()
 
     static let staff = ["Sam", "Priya", "Jordan"]
+
+    /// The month view with ISO week numbers down its side.
+    static let monthStyle: CalendarStyle = {
+        var style = CalendarStyle()
+        style.weekNumbers = .iso8601
+        return style
+    }()
 
     /// The owner's partner office, for the second column of hours.
     static let secondZone = TimeZone(identifier: "America/New_York")

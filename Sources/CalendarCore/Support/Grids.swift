@@ -30,6 +30,12 @@ extension Timetable {
         Grids.days(from: date, count: count, in: calendar)
     }
 
+    /// The number of each week of a month grid, top row first.
+    public static func weekNumbers(of grid: MonthGrid, numbering: WeekNumbering = .regional,
+                                   calendar: Calendar = .current) -> [Int] {
+        Grids.weekNumbers(of: grid, numbering: numbering, in: calendar)
+    }
+
     /// Weekday names in the order the calendar's week runs, in its locale.
     public static func weekdaySymbols(calendar: Calendar = .current, style: WeekdayStyle = .short) -> [String] {
         Grids.weekdaySymbols(in: calendar, style: style)
@@ -70,6 +76,20 @@ enum Grids {
     static func days(from date: Date, count: Int, in calendar: Calendar) -> [Date] {
         let first = calendar.startOfDay(for: date)
         return (0..<max(count, 0)).map { calendar.startOfDay(for: calendar.date(byAdding: .day, value: $0, to: first)!) }
+    }
+
+    static func weekNumbers(of grid: MonthGrid, numbering: WeekNumbering, in calendar: Calendar) -> [Int] {
+        var iso = Calendar(identifier: .iso8601)
+        iso.timeZone = calendar.timeZone
+        return grid.weeks.map { week in
+            switch numbering {
+            case .regional:
+                return calendar.component(.weekOfYear, from: week[0].date)
+            case .iso8601:
+                let monday = week.first { iso.component(.weekday, from: $0.date) == 2 } ?? week[0]
+                return iso.component(.weekOfYear, from: monday.date)
+            }
+        }
     }
 
     static func weekdaySymbols(in calendar: Calendar, style: WeekdayStyle) -> [String] {

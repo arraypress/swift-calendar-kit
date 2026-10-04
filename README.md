@@ -70,6 +70,20 @@ length, a range sees occurrences already running when it opens, and expansion ru
 calendar you pass, so each user's own zone. `phrase(from:)` fills in what a rule leaves to its
 first occurrence: "every week" becomes "Every Monday".
 
+## Through the day
+
+```swift
+let day = try DayRange("08:00", "02:00")                 // a day that ends at 2am
+Timetable.progress(at: .now, through: [day])             // fraction, elapsed, remaining — nil between ranges
+Timetable.weekNumbers(of: grid, numbering: .iso8601)     // 53, 1, 2, … down a month
+Timetable.deduplicated(events, title: \.title)          // one of each meeting held in two calendars
+```
+
+A `DayRange` may run past midnight — unlike opening hours, it is a person's day, not a shop's —
+so last night's range is still in progress this morning, and a weekly schedule files Friday's late
+night under Friday. Week numbers follow the calendar's own rule or ISO 8601; set
+`CalendarStyle.weekNumbers` and the month view shows them down its side.
+
 ## Rental figures
 
 ```swift
@@ -257,7 +271,7 @@ its views are sized for larger screens; drags need a pointer or touch, so Apple 
 
 ## Tested
 
-150 tests, all on fixed dates in fixed zones and locales: month grids from Sunday and Monday,
+161 tests, all on fixed dates in fixed zones and locales: month grids from Sunday and Monday,
 February in four rows and August in six, midnight boxes across the clock change, overlap columns
 and widening, a minimum duration making short events collide, overnight events cut at midnight,
 exclusive all-day ends, 23 and 25 hour lines, lanes with the long bar on top and the overflow
@@ -276,7 +290,8 @@ drags snapped to the quarter hour, days across the clock change, sweeps in eithe
 resizes that never collapse, and the skip, end-before and unending series edits; clashes with
 and without a buffer and within groups; .ics files folded, escaped, zoned, floating and edited
 occurrence by occurrence, round-tripped field for field; repeat phrases in twelve languages; and
-rental figures worked by hand — rates, month-end stays split by night, fees pro rata, lead times.
+rental figures worked by hand — rates, month-end stays split by night, fees pro rata, lead times;
+week 53 of 2026, a day ending at 2am still running at 1am, and duplicates across calendars.
 The EventKit bridge has five more of its own, for what can be checked without calendar access.
 
 ## Licence

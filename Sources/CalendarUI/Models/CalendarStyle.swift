@@ -40,6 +40,9 @@ public struct CalendarStyle: Sendable {
     /// The most event pills under a day in a month grid.
     public var monthPillLimit: Int = 3
 
+    /// Week numbers down a month's leading edge, by this rule; nil for none.
+    public var weekNumbers: WeekNumbering? = nil
+
     /// The width of one day on a bookings board.
     public var boardDayWidth: CGFloat = 44
 

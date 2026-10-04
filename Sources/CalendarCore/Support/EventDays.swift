@@ -15,6 +15,14 @@ extension Timetable {
         EventDays.byDay(events, days: days, in: calendar)
     }
 
+    /// One of each event that appears in several calendars — the meeting you
+    /// were invited to at work and at home. Two events are the same when their
+    /// titles match, ignoring case and spacing, and their start, end and
+    /// all-day-ness do. The first of each, in the order given, is kept.
+    public static func deduplicated<E: CalendarEvent>(_ events: [E], title: (E) -> String) -> [E] {
+        EventDays.deduplicated(events, title: title)
+    }
+
     /// The hour lines of a day's timeline, positioned the same way as
     /// ``layout(_:on:calendar:minimumDuration:)`` positions events.
     public static func hourMarks(on date: Date, every hours: Int = 1, calendar: Calendar = .current) -> [HourMark] {
@@ -39,6 +47,21 @@ enum EventDays {
         let (start, end) = coverage(of: event, in: calendar)
         if end == start { return start >= interval.start && start < interval.end }
         return start < interval.end && end > interval.start
+    }
+
+    private struct Identity: Hashable {
+        let title: String
+        let start: Date
+        let end: Date
+        let isAllDay: Bool
+    }
+
+    static func deduplicated<E: CalendarEvent>(_ events: [E], title: (E) -> String) -> [E] {
+        var seen = Set<Identity>()
+        return events.filter { event in
+            let name = title(event).lowercased().split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            return seen.insert(Identity(title: name, start: event.start, end: event.end, isAllDay: event.isAllDay)).inserted
+        }
     }
 
     static func day(_ date: Date, in calendar: Calendar) -> DateInterval {

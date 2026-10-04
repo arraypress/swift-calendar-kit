@@ -61,6 +61,7 @@ public struct MonthView<Event: CalendarEvent>: View {
     public var body: some View {
         let grid = Timetable.month(containing: date, calendar: calendar, rows: .six)
         let perDay = Timetable.events(events, on: grid.days.map(\.date), calendar: calendar)
+        let weekNumbers = style.weekNumbers.map { Timetable.weekNumbers(of: grid, numbering: $0, calendar: calendar) }
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 Text(calendar.monthTitle(grid.month.start))
@@ -72,6 +73,7 @@ public struct MonthView<Event: CalendarEvent>: View {
             .padding(.horizontal)
             .padding(.vertical, 8)
             HStack(spacing: 0) {
+                if weekNumbers != nil { Color.clear.frame(width: weekNumberWidth, height: 1) }
                 ForEach(Timetable.weekdaySymbols(calendar: calendar, style: .short), id: \.self) { symbol in
                     Text(symbol)
                         .font(.caption2.weight(.medium))
@@ -84,7 +86,10 @@ public struct MonthView<Event: CalendarEvent>: View {
                 VStack(spacing: 0) {
                     ForEach(Array(grid.weeks.enumerated()), id: \.offset) { row, week in
                         Divider()
-                        TitledWeek(week, perDay: Array(perDay[(row * 7)..<(row * 7 + 7)]))
+                        HStack(alignment: .top, spacing: 0) {
+                            if let weekNumbers { WeekNumber(weekNumbers[row]) }
+                            TitledWeek(week, perDay: Array(perDay[(row * 7)..<(row * 7 + 7)]))
+                        }
                     }
                 }
             } else {
@@ -92,6 +97,7 @@ public struct MonthView<Event: CalendarEvent>: View {
                     ForEach(Array(grid.weeks.enumerated()), id: \.offset) { row, week in
                         Divider()
                         GridRow {
+                            if let weekNumbers { WeekNumber(weekNumbers[row]) }
                             ForEach(Array(week.enumerated()), id: \.element.id) { column, day in
                                 DayCell(day: day, events: perDay[row * 7 + column])
                             }
@@ -140,6 +146,19 @@ public struct MonthView<Event: CalendarEvent>: View {
         .buttonStyle(.plain)
         .accessibilityLabel(Text(spokenDay(day.date, eventCount: events.count)))
         .accessibilityAddTraits(calendar.isDate(day.date, inSameDayAs: date) ? .isSelected : [])
+    }
+
+    // MARK: - Week numbers
+
+    private var weekNumberWidth: CGFloat { 26 }
+
+    private func WeekNumber(_ number: Int) -> some View {
+        Text(number.formatted())
+            .font(.caption2.weight(.medium).monospacedDigit())
+            .foregroundStyle(.tertiary)
+            .frame(width: weekNumberWidth)
+            .padding(.top, 10)
+            .accessibilityLabel(Text("Week \(number)", bundle: .module))
     }
 
     // MARK: - Titles style
