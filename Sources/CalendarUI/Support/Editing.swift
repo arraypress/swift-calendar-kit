@@ -88,6 +88,7 @@ struct EditingHost<Event: CalendarEvent>: ViewModifier where Event.ID: Sendable 
     let onDelete: ((Event, EditScope) -> Void)?
     let onCreate: ((DateInterval) -> Void)?
 
+    @Environment(\.calendarUndo) private var undo
     @State private var editor = CalendarEditor()
     @State private var pending: Pending?
     @FocusState private var focused: Bool
@@ -159,7 +160,9 @@ struct EditingHost<Event: CalendarEvent>: ViewModifier where Event.ID: Sendable 
             guard let event = value as? Event else { return }
             request(.delete(event))
         }
-        editor.create = { interval in onCreate?(interval) }
+        editor.create = { interval in
+            recordingUndo(undo, String(localized: "New Event")) { onCreate?(interval) }
+        }
         editor.selectionChanged = { id in
             selection = id?.base as? Event.ID
             #if !os(watchOS)
@@ -180,9 +183,11 @@ struct EditingHost<Event: CalendarEvent>: ViewModifier where Event.ID: Sendable 
     private func perform(_ action: Pending, _ scope: EditScope) {
         switch action {
         case .reschedule(let event, let interval):
-            onReschedule?(event, interval, scope)
+            let name = interval.duration == event.end.timeIntervalSince(event.start)
+                ? String(localized: "Move Event") : String(localized: "Resize Event")
+            recordingUndo(undo, name) { onReschedule?(event, interval, scope) }
         case .delete(let event):
-            onDelete?(event, scope)
+            recordingUndo(undo, String(localized: "Delete Event")) { onDelete?(event, scope) }
             if editor.isSelected(event.id) { editor.select(nil, id: nil) }
         }
         pending = nil

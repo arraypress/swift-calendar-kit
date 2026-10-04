@@ -16,18 +16,20 @@ public struct WeekView<Event: CalendarEvent, Tile: View>: View {
     @Binding private var date: Date
     private let events: [Event]
     private let calendar: Calendar
+    private let hours: OpeningHours?
     private let dayCount: Int
     private let tile: (Event) -> Tile
     private let onSelect: ((Event) -> Void)?
 
     /// A multi-day view drawing each event with your own tile.
     public init(
-        events: [Event], date: Binding<Date>, calendar: Calendar = .current, dayCount: Int = 7,
+        events: [Event], date: Binding<Date>, calendar: Calendar = .current, dayCount: Int = 7, hours: OpeningHours? = nil,
         onSelect: ((Event) -> Void)? = nil, @ViewBuilder tile: @escaping (Event) -> Tile
     ) {
         _date = date
         self.events = events
         self.calendar = calendar
+        self.hours = hours
         self.dayCount = max(dayCount, 1)
         self.tile = tile
         self.onSelect = onSelect
@@ -70,7 +72,7 @@ public struct WeekView<Event: CalendarEvent, Tile: View>: View {
             .padding(.bottom, 4)
             Divider()
             AllDayLanes(days: days, events: events, calendar: calendar, tile: tile, onSelect: onSelect)
-            Timeline(days: days, events: events, calendar: calendar, selectedDay: date, tile: tile, onSelect: onSelect)
+            Timeline(days: days, events: events, calendar: calendar, selectedDay: date, hours: hours, tile: tile, onSelect: onSelect)
         }
         .swipeToStep(move)
     }
@@ -86,11 +88,11 @@ extension WeekView where Tile == EventTile<EventTileLabel> {
 
     /// A multi-day view with the standard tile: a title in a colour.
     public init(
-        events: [Event], date: Binding<Date>, calendar: Calendar = .current, dayCount: Int = 7,
+        events: [Event], date: Binding<Date>, calendar: Calendar = .current, dayCount: Int = 7, hours: OpeningHours? = nil,
         title: @escaping (Event) -> String, tint: @escaping (Event) -> Color = { _ in .accentColor },
         onSelect: ((Event) -> Void)? = nil
     ) {
-        self.init(events: events, date: date, calendar: calendar, dayCount: dayCount, onSelect: onSelect) { event in
+        self.init(events: events, date: date, calendar: calendar, dayCount: dayCount, hours: hours, onSelect: onSelect) { event in
             EventTile(title(event), subtitle: event.isAllDay ? nil : calendar.timeRange(event.start, event.end), tint: tint(event), repeats: event.isRecurring)
         }
     }

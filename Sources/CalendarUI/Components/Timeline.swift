@@ -16,6 +16,7 @@ struct Timeline<Event: CalendarEvent, Tile: View>: View {
     let events: [Event]
     let calendar: Calendar
     var selectedDay: Date? = nil
+    var hours: OpeningHours? = nil
     let tile: (Event) -> Tile
     let onSelect: ((Event) -> Void)?
 
@@ -28,7 +29,7 @@ struct Timeline<Event: CalendarEvent, Tile: View>: View {
                     ForEach(Array(days.enumerated()), id: \.element) { index, day in
                         DayColumn(day: day, index: index, dayCount: days.count, events: events, calendar: calendar,
                                   isSelectedDay: days.count > 1 && selectedDay.map { calendar.isDate($0, inSameDayAs: day) } == true,
-                                  tile: tile, onSelect: onSelect)
+                                  hours: hours, tile: tile, onSelect: onSelect)
                             .zIndex(events.contains { editor?.isDragging($0.id) == true && calendar.isDate($0.start, inSameDayAs: day) } ? 1 : 0)
                     }
                 }
@@ -82,6 +83,7 @@ private struct DayColumn<Event: CalendarEvent, Tile: View>: View {
     let events: [Event]
     let calendar: Calendar
     let isSelectedDay: Bool
+    let hours: OpeningHours?
     let tile: (Event) -> Tile
     let onSelect: ((Event) -> Void)?
 
@@ -107,6 +109,15 @@ private struct DayColumn<Event: CalendarEvent, Tile: View>: View {
                                                       to: layout.day.start.addingTimeInterval(seconds(step.start.y + step.translation.height)),
                                                       snap: editor?.snap ?? 900, calendar: calendar))
                     }
+                if let hours {
+                    ForEach(Array(closed(hours, in: layout.day).enumerated()), id: \.offset) { _, gap in
+                        Rectangle()
+                            .fill(Color.primary.opacity(0.05))
+                            .frame(width: width, height: CGFloat(gap.duration / layout.day.duration) * height)
+                            .offset(y: CGFloat(gap.start.timeIntervalSince(layout.day.start) / layout.day.duration) * height)
+                            .allowsHitTesting(false)
+                    }
+                }
                 ForEach(Timetable.hourMarks(on: day, calendar: calendar)) { mark in
                     Rectangle()
                         .fill(.separator)
@@ -141,6 +152,16 @@ private struct DayColumn<Event: CalendarEvent, Tile: View>: View {
             }
         }
         .frame(height: height)
+    }
+}
+
+extension DayColumn {
+
+    /// The stretches of the day outside opening hours.
+    func closed(_ hours: OpeningHours, in day: DateInterval) -> [DateInterval] {
+        let today = CalendarDay(day.start, in: calendar)
+        let open = Timetable.openIntervals(hours, from: today, through: today, calendar: calendar)
+        return Timetable.freeTime(in: [day], busy: open)
     }
 }
 

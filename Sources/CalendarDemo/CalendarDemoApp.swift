@@ -47,6 +47,7 @@ typealias Item = Occurrence<Booking>
 
 enum Screen: String, CaseIterable, Identifiable {
     case day = "Day", week = "Week", threeDay = "3 Day", list = "List", board = "Board", month = "Month", year = "Year"
+    case stays = "Stays", viewings = "Viewings"
     var id: String { rawValue }
 }
 
@@ -57,6 +58,10 @@ struct DemoView: View {
     @State private var message: String?
     @State private var bookings = Samples.bookings(around: .now)
     @State private var selection: Item.ID?
+    @State private var stayProperty = Samples.properties[0]
+    @State private var stay: Stay?
+    @State private var viewingDay = Date.now
+    @State private var viewing: SlotChoice<String>?
 
     /// Every booking with its repeats expanded, for the views.
     private var items: [Item] {
@@ -79,11 +84,11 @@ struct DemoView: View {
 
             switch screen {
             case .day:
-                DayView(events: items, date: $date, title: \.event.title, tint: \.event.color)
+                DayView(events: items, date: $date, hours: Samples.officeHours, title: \.event.title, tint: \.event.color)
             case .week:
-                WeekView(events: items, date: $date, title: \.event.title, tint: \.event.color)
+                WeekView(events: items, date: $date, hours: Samples.officeHours, title: \.event.title, tint: \.event.color)
             case .threeDay:
-                WeekView(events: items, date: $date, dayCount: 3, title: \.event.title, tint: \.event.color)
+                WeekView(events: items, date: $date, dayCount: 3, hours: Samples.officeHours, title: \.event.title, tint: \.event.color)
             case .list:
                 AgendaView(events: items, date: $date, title: \.event.title, tint: \.event.color)
             case .board:
@@ -111,11 +116,54 @@ struct DemoView: View {
                 MonthView(events: items, date: $date, style: .titles, tint: \.event.color, title: \.event.title)
             case .year:
                 YearView(events: items, date: $date, tint: \.event.color) { _ in screen = .month }
+            case .stays:
+                VStack(spacing: 0) {
+                    Picker("Property", selection: $stayProperty) {
+                        ForEach(Samples.properties, id: \.self) { Text($0).tag($0) }
+                    }
+                    .padding(.horizontal)
+                    .onChange(of: stayProperty) { stay = nil }
+                    StayPicker(selection: $stay, booked: stays(at: stayProperty), rules: StayRules(minimumNights: 2, maximumNights: 28),
+                               rates: Samples.rates(for: stayProperty), currencyCode: "GBP")
+                    if let stay, stay.nightCount > 0 {
+                        Button("Book \(stay.nightCount) nights at \(stayProperty)") { book(stay, at: stayProperty) }
+                            .buttonStyle(.borderedProminent)
+                            .padding(.bottom)
+                    }
+                }
+            case .viewings:
+                HStack(alignment: .top, spacing: 0) {
+                    SlotPicker(date: $viewingDay, selection: $viewing, resources: Samples.staff, name: { $0 },
+                               hours: Samples.shifts, busy: Samples.staffBusy(from: items), length: 30 * 60, every: 15 * 60,
+                               buffer: 15 * 60)
+                    VStack(spacing: 12) {
+                        OpeningHoursCard(Samples.officeHours, title: "Lettings office")
+                        if let viewing {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Viewing with \(viewing.resource)").font(.headline)
+                                Text(viewing.interval.start.formatted(date: .complete, time: .shortened)).font(.subheadline)
+                                Button("Confirm viewing") {
+                                    bookings.append(Booking(title: "Viewing · \(viewing.resource)", start: viewing.interval.start,
+                                                            end: viewing.interval.end, color: .teal, property: ""))
+                                    message = "Viewing booked with \(viewing.resource)"
+                                    self.viewing = nil
+                                }
+                                .buttonStyle(.borderedProminent)
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(RoundedRectangle(cornerRadius: 14).fill(Color.accentColor.opacity(0.1)))
+                        }
+                    }
+                    .frame(width: 300)
+                    .padding()
+                }
             }
         }
         .calendarEditing(Item.self, selection: $selection, onReschedule: reschedule, onDelete: delete, onCreate: { interval in
             bookings.append(Booking(title: "New event", start: interval.start, end: interval.end, color: .accentColor))
         })
+        .calendarUndo($bookings)
         .calendarEventDetail { (item: Item) in
             EventDetailView(item, title: item.event.title, tint: item.event.color) {
                 BookingExtras(booking: item.event)
@@ -136,6 +184,21 @@ struct DemoView: View {
 // MARK: - Applying edits
 
 extension DemoView {
+
+    /// A property's stays, as nights for the picker.
+    private func stays(at property: String) -> [Stay] {
+        bookings.filter { $0.isAllDay && $0.property == property }
+            .map { Stay(checkIn: CalendarDay($0.start), checkOut: CalendarDay($0.end)) }
+    }
+
+    private func book(_ stay: Stay, at property: String) {
+        let quote = Timetable.quote(stay, rates: Samples.rates(for: property))
+        bookings.append(Booking(title: "\(property) · New guest", start: stay.checkIn.date(in: .current), end: stay.checkOut.date(in: .current),
+                                isAllDay: true, color: Samples.colors[property] ?? .accentColor,
+                                amount: NSDecimalNumber(decimal: quote.total).intValue, property: property))
+        message = "Booked \(stay.nightCount) nights at \(property)"
+        self.stay = nil
+    }
 
     /// Changes the stored booking an occurrence came from.
     private func update(_ id: UUID, _ change: (inout Booking) -> Void) {
@@ -247,6 +310,52 @@ enum Samples {
 
     static let jobs = ["Plumber", "Electrician", "Gas safety check", "Boiler service", "Viewing", "Photographer",
                        "Window cleaner", "Inventory check", "Key handover", "Gardener", "Smoke alarm test"]
+
+    /// The lettings office: weekdays with a late Thursday, Saturday mornings.
+    static let officeHours: OpeningHours = {
+        var hours = OpeningHours([try! TimeWindow("09:00", "17:30")], on: [.monday, .tuesday, .wednesday, .friday])
+        hours.weekly[.thursday] = [try! TimeWindow("09:00", "19:00")]
+        hours.weekly[.saturday] = [try! TimeWindow("10:00", "14:00")]
+        return hours
+    }()
+
+    static let staff = ["Sam", "Priya", "Jordan"]
+
+    /// Each agent's shifts.
+    static func shifts(_ person: String) -> OpeningHours {
+        switch person {
+        case "Sam": OpeningHours([try! TimeWindow("09:00", "12:30"), try! TimeWindow("13:30", "17:30")], on: OpeningHours.weekdays)
+        case "Priya": OpeningHours([try! TimeWindow("12:00", "19:00")], on: [.tuesday, .wednesday, .thursday, .friday, .saturday])
+        default: OpeningHours([try! TimeWindow("08:00", "14:00")], on: [.monday, .wednesday, .friday, .saturday, .sunday])
+        }
+    }
+
+    /// Each agent's existing appointments: the timed jobs, shared round by start time.
+    static func staffBusy(from items: [Item]) -> [String: [DateInterval]] {
+        var busy: [String: [DateInterval]] = [:]
+        for item in items where !item.isAllDay {
+            let person = staff[abs(Int(item.start.timeIntervalSinceReferenceDate / 900)) % staff.count]
+            busy[person, default: []].append(DateInterval(start: item.start, end: max(item.end, item.start)))
+        }
+        return busy
+    }
+
+    /// A property's prices: its nightly rate, a dearer summer and Christmas,
+    /// 10% off a week, 20% off four weeks, and a cleaning fee.
+    static func rates(for property: String) -> NightlyRates {
+        let base = Decimal(nightly[property] ?? 120)
+        let year = Calendar.current.component(.year, from: .now)
+        let day = { (y: Int, m: Int, d: Int) in try! CalendarDay(year: y, month: m, day: d) }
+        return NightlyRates(
+            nightly: base, weekendNightly: base * Decimal(1.25),
+            seasons: [
+                Season(name: "Summer", from: day(year, 6, 15), through: day(year, 9, 10), nightly: base * Decimal(1.4), minimumNights: 4),
+                Season(name: "Christmas", from: day(year, 12, 20), through: day(year + 1, 1, 3), nightly: base * 2, minimumNights: 5),
+            ],
+            discounts: [StayDiscount(minimumNights: 7, percent: 10), StayDiscount(minimumNights: 28, percent: 20)],
+            perStayFee: 60
+        )
+    }
 
     static let nightly: [String: Int] = [
         "406 Runway Rd": 145, "Flat 3": 95, "Harbour View": 240, "Garden Cottage": 120,
