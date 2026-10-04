@@ -70,6 +70,23 @@ length, a range sees occurrences already running when it opens, and expansion ru
 calendar you pass, so each user's own zone. `phrase(from:)` fills in what a rule leaves to its
 first occurrence: "every week" becomes "Every Monday".
 
+## Rental figures
+
+```swift
+let records = bookings.map { StayRecord(stay: $0.stay, amount: $0.total, fee: ChannelFee(flat: 0, percent: 15), bookedOn: $0.bookedOn) }
+let september = Timetable.metrics(records, from: first, through: last, units: 8)
+september.occupancy                 // 0.71
+september.averageNightlyRate        // average daily rate
+september.revenuePerAvailableNight  // RevPAR
+september.payout                    // revenue less what the channels took
+```
+
+Occupancy, the average nightly rate, revenue per available night, nights booked, arrivals,
+their average length and lead time, and channel fees and payout. Money is counted night by night,
+so a stay across the end of a month earns each month only its own nights; counts of stays are of
+the stays arriving in the stretch. Channel fees — a flat part and a share — come from your app,
+never from a built-in table of platform rates, which would quietly go stale.
+
 ## Every call takes a calendar
 
 There is no shared setting. A US calendar's week starts on Sunday and a UK one's on Monday; which
@@ -240,7 +257,7 @@ its views are sized for larger screens; drags need a pointer or touch, so Apple 
 
 ## Tested
 
-141 tests, all on fixed dates in fixed zones and locales: month grids from Sunday and Monday,
+150 tests, all on fixed dates in fixed zones and locales: month grids from Sunday and Monday,
 February in four rows and August in six, midnight boxes across the clock change, overlap columns
 and widening, a minimum duration making short events collide, overnight events cut at midnight,
 exclusive all-day ends, 23 and 25 hour lines, lanes with the long bar on top and the overflow
@@ -258,7 +275,8 @@ spell out the day a plain weekly or monthly rule leaves to its first occurrence,
 drags snapped to the quarter hour, days across the clock change, sweeps in either direction,
 resizes that never collapse, and the skip, end-before and unending series edits; clashes with
 and without a buffer and within groups; .ics files folded, escaped, zoned, floating and edited
-occurrence by occurrence, round-tripped field for field; and repeat phrases in twelve languages.
+occurrence by occurrence, round-tripped field for field; repeat phrases in twelve languages; and
+rental figures worked by hand — rates, month-end stays split by night, fees pro rata, lead times.
 The EventKit bridge has five more of its own, for what can be checked without calendar access.
 
 ## Licence
