@@ -45,7 +45,7 @@ public struct WeekStrip: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text(calendar.format(day) { $0.weekday(.wide).day().month(.wide) }))
-                .accessibilityValue(Text(marker(day) == nil ? "" : String(localized: "has events")))
+                .accessibilityValue(Text(marker(day) == nil ? "" : String(localized: "has events", bundle: .module)))
                 .accessibilityAddTraits(calendar.isDate(day, inSameDayAs: selection) ? .isSelected : [])
             }
             StepButton(systemImage: "chevron.right") { move(by: 1) }
@@ -106,6 +106,6 @@ struct StepButton: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)
-        .accessibilityLabel(Text(systemImage.contains("left") || systemImage.contains("up") ? "Previous" : "Next"))
+        .accessibilityLabel(systemImage.contains("left") || systemImage.contains("up") ? Text("Previous", bundle: .module) : Text("Next", bundle: .module))
     }
 }

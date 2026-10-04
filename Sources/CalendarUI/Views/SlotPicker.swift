@@ -91,7 +91,7 @@ public struct SlotPicker<Resource: Hashable & Sendable>: View {
             if resources.count > 1 {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        Chip(String(localized: "Anyone"), on: only == nil) { only = nil; selection = nil }
+                        Chip(String(localized: "Anyone", bundle: .module), on: only == nil) { only = nil; selection = nil }
                         ForEach(resources, id: \.self) { resource in
                             Chip(name(resource), on: only == resource) { only = resource; selection = nil }
                         }
@@ -102,8 +102,8 @@ public struct SlotPicker<Resource: Hashable & Sendable>: View {
             }
             Divider()
             if chosen.isEmpty {
-                ContentUnavailableView(String(localized: "No times left"), systemImage: "calendar.badge.exclamationmark",
-                                       description: Text(String(localized: "Try another day.")))
+                ContentUnavailableView(String(localized: "No times left", bundle: .module), systemImage: "calendar.badge.exclamationmark",
+                                       description: Text(String(localized: "Try another day.", bundle: .module)))
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
@@ -151,9 +151,9 @@ public struct SlotPicker<Resource: Hashable & Sendable>: View {
 
         var title: String {
             switch self {
-            case .morning: String(localized: "Morning")
-            case .afternoon: String(localized: "Afternoon")
-            case .evening: String(localized: "Evening")
+            case .morning: String(localized: "Morning", bundle: .module)
+            case .afternoon: String(localized: "Afternoon", bundle: .module)
+            case .evening: String(localized: "Evening", bundle: .module)
             }
         }
     }
@@ -177,7 +177,7 @@ public struct SlotPicker<Resource: Hashable & Sendable>: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(calendar.format(day) { $0.weekday(.wide).day().month(.wide) }))
-        .accessibilityValue(Text(available ? "" : String(localized: "No times left")))
+        .accessibilityValue(Text(available ? "" : String(localized: "No times left", bundle: .module)))
     }
 
     private func Chip(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {

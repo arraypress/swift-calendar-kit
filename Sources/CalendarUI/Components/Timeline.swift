@@ -321,7 +321,7 @@ struct AllDayLanes<Event: CalendarEvent, Tile: View>: View {
         let rows = CGFloat(layout.laneCount + (overflow ? 1 : 0))
         if rows > 0 {
             HStack(alignment: .top, spacing: 0) {
-                Text("all-day")
+                Text("all-day", bundle: .module)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .frame(width: style.hourLabelWidth, alignment: .trailing)
@@ -341,7 +341,7 @@ struct AllDayLanes<Event: CalendarEvent, Tile: View>: View {
                         }
                         ForEach(Array(layout.hidden.enumerated()), id: \.offset) { index, count in
                             if count > 0 {
-                                Text("+\(count)")
+                                Text("+\(count)", bundle: .module)
                                     .font(.caption2.weight(.medium))
                                     .foregroundStyle(.secondary)
                                     .offset(x: column * CGFloat(index) + 6, y: CGFloat(layout.laneCount) * bar + 2)

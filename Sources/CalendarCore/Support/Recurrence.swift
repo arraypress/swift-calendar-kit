@@ -49,6 +49,7 @@ enum Recurrence {
 enum Phrasing {
 
     static func describe(_ rule: RecurrenceRule, from start: Date, calendar: Calendar) -> String {
+        if let localized = PhraseLanguages.describe(rule, from: start, calendar: calendar) { return localized }
         let weekday = Weekday(rawValue: calendar.component(.weekday, from: start)) ?? .monday
         let day = calendar.component(.day, from: start)
         let unsaid = rule.byDay.isEmpty && rule.byMonthDay.isEmpty && rule.bySetPos.isEmpty && rule.businessDayOrdinal == nil

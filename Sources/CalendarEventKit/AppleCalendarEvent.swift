@@ -63,7 +63,7 @@ public struct AppleCalendarEvent: CalendarEvent, Sendable, Hashable {
         let identifier = event.eventIdentifier ?? event.calendarItemIdentifier
         id = ID(identifier: identifier, start: event.startDate)
         eventIdentifier = identifier
-        title = event.title?.isEmpty == false ? event.title! : String(localized: "New Event")
+        title = event.title?.isEmpty == false ? event.title! : String(localized: "New Event", bundle: .module)
         start = event.startDate
         end = event.isAllDay ? EventKitRules.exclusiveEnd(of: event) : event.endDate
         isAllDay = event.isAllDay

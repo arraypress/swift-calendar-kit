@@ -87,6 +87,6 @@ private struct ConflictOutline: ViewModifier {
                         .allowsHitTesting(false)
                 }
             }
-            .accessibilityHint(clashing ? Text("Conflicts with another event") : Text(""))
+            .accessibilityHint(clashing ? Text("Conflicts with another event", bundle: .module) : Text("", bundle: .module))
     }
 }

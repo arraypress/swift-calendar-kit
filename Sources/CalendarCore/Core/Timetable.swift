@@ -184,8 +184,11 @@ public enum Timetable {
 
     /// Opening hours as week-at-a-glance lines, in the calendar's week order
     /// and its locale's clock.
-    public static func summary(_ hours: OpeningHours, calendar: Calendar = .current, closedLabel: String = "Closed") -> [HoursLine] {
-        HoursSummary.lines(hours, in: calendar, closedLabel: closedLabel)
+    ///
+    /// - Parameter closedLabel: what a closed day reads; "Closed" in the
+    ///   reader's language unless given.
+    public static func summary(_ hours: OpeningHours, calendar: Calendar = .current, closedLabel: String? = nil) -> [HoursLine] {
+        HoursSummary.lines(hours, in: calendar, closedLabel: closedLabel ?? String(localized: "Closed", bundle: .module))
     }
 
     // MARK: - Stays

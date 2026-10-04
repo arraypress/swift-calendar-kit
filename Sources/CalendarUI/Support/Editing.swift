@@ -130,8 +130,8 @@ struct EditingHost<Event: CalendarEvent>: ViewModifier where Event.ID: Sendable 
 
         var title: String {
             switch self {
-            case .reschedule: String(localized: "This is a repeating event. Change which events?")
-            case .delete: String(localized: "This is a repeating event. Delete which events?")
+            case .reschedule: String(localized: "This is a repeating event. Change which events?", bundle: .module)
+            case .delete: String(localized: "This is a repeating event. Delete which events?", bundle: .module)
             }
         }
     }
@@ -186,7 +186,7 @@ struct EditingHost<Event: CalendarEvent>: ViewModifier where Event.ID: Sendable 
                 ForEach([EditScope.thisEvent, .thisAndFollowing, .allEvents], id: \.self) { scope in
                     Button(Self.label(for: scope), role: isDelete(action) ? .destructive : nil) { perform(action, scope) }
                 }
-                Button("Cancel", role: .cancel) {}
+                Button(String(localized: "Cancel", bundle: .module), role: .cancel) {}
             }
     }
 
@@ -205,7 +205,7 @@ struct EditingHost<Event: CalendarEvent>: ViewModifier where Event.ID: Sendable 
             request(.delete(event))
         }
         editor.create = { interval in
-            recordingUndo(undo, String(localized: "New Event")) { onCreate?(interval) }
+            recordingUndo(undo, String(localized: "New Event", bundle: .module)) { onCreate?(interval) }
         }
         editor.canCopy = onCopy != nil
         editor.copy = { value in if value is Event { editor.clipboard = value } }
@@ -216,7 +216,7 @@ struct EditingHost<Event: CalendarEvent>: ViewModifier where Event.ID: Sendable 
         }
         editor.duplicate = { value in
             guard let event = value as? Event else { return }
-            recordingUndo(undo, String(localized: "Duplicate Event")) {
+            recordingUndo(undo, String(localized: "Duplicate Event", bundle: .module)) {
                 onCopy?(event, DateInterval(start: event.start, end: max(event.end, event.start)))
             }
         }
@@ -236,12 +236,12 @@ struct EditingHost<Event: CalendarEvent>: ViewModifier where Event.ID: Sendable 
     @ViewBuilder private var shortcuts: some View {
         #if os(macOS) || os(iOS) || os(visionOS)
         ZStack {
-            Button("Duplicate") { if let event = editor.selectedEvent { editor.duplicate(event) } }
+            Button(String(localized: "Duplicate", bundle: .module)) { if let event = editor.selectedEvent { editor.duplicate(event) } }
                 .keyboardShortcut("d", modifiers: .command)
             #if !os(macOS)
-            Button("Copy") { _ = copySelected() }.keyboardShortcut("c", modifiers: .command)
-            Button("Cut") { _ = cutSelected() }.keyboardShortcut("x", modifiers: .command)
-            Button("Paste") { paste() }.keyboardShortcut("v", modifiers: .command)
+            Button(String(localized: "Copy", bundle: .module)) { _ = copySelected() }.keyboardShortcut("c", modifiers: .command)
+            Button(String(localized: "Cut", bundle: .module)) { _ = cutSelected() }.keyboardShortcut("x", modifiers: .command)
+            Button(String(localized: "Paste", bundle: .module)) { paste() }.keyboardShortcut("v", modifiers: .command)
             #endif
         }
         .frame(width: 0, height: 0)
@@ -285,7 +285,7 @@ struct EditingHost<Event: CalendarEvent>: ViewModifier where Event.ID: Sendable 
         } else {
             landing = original
         }
-        recordingUndo(undo, String(localized: "Paste Event")) { onCopy(event, landing) }
+        recordingUndo(undo, String(localized: "Paste Event", bundle: .module)) { onCopy(event, landing) }
     }
 
     private func request(_ action: Pending) {
@@ -301,10 +301,10 @@ struct EditingHost<Event: CalendarEvent>: ViewModifier where Event.ID: Sendable 
         switch action {
         case .reschedule(let event, let interval):
             let name = interval.duration == event.end.timeIntervalSince(event.start)
-                ? String(localized: "Move Event") : String(localized: "Resize Event")
+                ? String(localized: "Move Event", bundle: .module) : String(localized: "Resize Event", bundle: .module)
             recordingUndo(undo, name) { onReschedule?(event, interval, scope) }
         case .delete(let event):
-            recordingUndo(undo, String(localized: "Delete Event")) { onDelete?(event, scope) }
+            recordingUndo(undo, String(localized: "Delete Event", bundle: .module)) { onDelete?(event, scope) }
             if editor.isSelected(event.id) { editor.select(nil, id: nil) }
         }
         pending = nil
@@ -317,9 +317,9 @@ struct EditingHost<Event: CalendarEvent>: ViewModifier where Event.ID: Sendable 
 
     static func label(for scope: EditScope) -> String {
         switch scope {
-        case .thisEvent: String(localized: "This Event")
-        case .thisAndFollowing: String(localized: "This and Following Events")
-        case .allEvents: String(localized: "All Events")
+        case .thisEvent: String(localized: "This Event", bundle: .module)
+        case .thisAndFollowing: String(localized: "This and Following Events", bundle: .module)
+        case .allEvents: String(localized: "All Events", bundle: .module)
         }
     }
 }

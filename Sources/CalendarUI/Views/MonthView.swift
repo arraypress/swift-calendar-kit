@@ -241,7 +241,7 @@ public struct MonthView<Event: CalendarEvent>: View {
                 .modifier(MonthDrag(event: event, column: column, row: row, calendar: calendar))
             }
             if hidden > 0 {
-                Text("+\(hidden) more")
+                Text("+\(hidden) more", bundle: .module)
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(.secondary)
                     .frame(height: laneHeight)
@@ -258,11 +258,7 @@ public struct MonthView<Event: CalendarEvent>: View {
     /// "Sunday 4 October, 3 events".
     private func spokenDay(_ day: Date, eventCount: Int) -> String {
         let name = calendar.format(day) { $0.weekday(.wide).day().month(.wide) }
-        switch eventCount {
-        case 0: return name
-        case 1: return String(localized: "\(name), 1 event")
-        default: return String(localized: "\(name), \(eventCount) events")
-        }
+        return eventCount == 0 ? name : name + ", " + String(localized: "\(eventCount) events", bundle: .module)
     }
 
     private func move(by months: Int) {

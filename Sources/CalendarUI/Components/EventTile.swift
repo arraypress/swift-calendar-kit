@@ -88,6 +88,6 @@ public struct RepeatBadge: View {
         Image(systemName: "repeat")
             .font(.system(size: 9, weight: .bold))
             .foregroundStyle(.secondary)
-            .accessibilityLabel(Text("Repeats"))
+            .accessibilityLabel(Text("Repeats", bundle: .module))
     }
 }

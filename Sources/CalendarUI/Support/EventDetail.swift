@@ -83,16 +83,16 @@ private struct Selectable<Event: CalendarEvent>: ViewModifier {
             .onHover { isHovered = $0 }
             .contextMenu {
                 if detail?.build(event) != nil {
-                    Button("Show Details", systemImage: "info.circle") { isShowing = true }
+                    Button(String(localized: "Show Details", bundle: .module), systemImage: "info.circle") { isShowing = true }
                 }
                 if let editor, editor.canCopy {
-                    Button("Copy", systemImage: "doc.on.doc") { editor.copy(event) }
-                    if editor.canDelete { Button("Cut", systemImage: "scissors") { editor.cut(event) } }
-                    Button("Duplicate", systemImage: "plus.square.on.square") { editor.duplicate(event) }
+                    Button(String(localized: "Copy", bundle: .module), systemImage: "doc.on.doc") { editor.copy(event) }
+                    if editor.canDelete { Button(String(localized: "Cut", bundle: .module), systemImage: "scissors") { editor.cut(event) } }
+                    Button(String(localized: "Duplicate", bundle: .module), systemImage: "plus.square.on.square") { editor.duplicate(event) }
                 }
                 if let editor, editor.canDelete {
                     Divider()
-                    Button("Delete", systemImage: "trash", role: .destructive) { editor.delete(event) }
+                    Button(String(localized: "Delete", bundle: .module), systemImage: "trash", role: .destructive) { editor.delete(event) }
                 }
             }
             #endif
@@ -100,20 +100,20 @@ private struct Selectable<Event: CalendarEvent>: ViewModifier {
             .accessibilityElement(children: .combine)
             .accessibilityValue(Text(Spoken.when(event, calendar: calendar)))
             .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
-            .accessibilityAction(named: Text("Show Details")) { if detail?.build(event) != nil { isShowing = true } }
-            .accessibilityAction(named: Text("Move 15 Minutes Earlier")) {
+            .accessibilityAction(named: Text("Show Details", bundle: .module)) { if detail?.build(event) != nil { isShowing = true } }
+            .accessibilityAction(named: Text("Move 15 Minutes Earlier", bundle: .module)) {
                 if canMove, !event.isAllDay { editor?.reschedule(event, Timetable.moved(original, by: -(editor?.snap ?? 900), snap: editor?.snap ?? 900, calendar: calendar)) }
             }
-            .accessibilityAction(named: Text("Move 15 Minutes Later")) {
+            .accessibilityAction(named: Text("Move 15 Minutes Later", bundle: .module)) {
                 if canMove, !event.isAllDay { editor?.reschedule(event, Timetable.moved(original, by: editor?.snap ?? 900, snap: editor?.snap ?? 900, calendar: calendar)) }
             }
-            .accessibilityAction(named: Text("Move to Previous Day")) {
+            .accessibilityAction(named: Text("Move to Previous Day", bundle: .module)) {
                 if canMove { editor?.reschedule(event, Timetable.moved(original, byDays: -1, calendar: calendar)) }
             }
-            .accessibilityAction(named: Text("Move to Next Day")) {
+            .accessibilityAction(named: Text("Move to Next Day", bundle: .module)) {
                 if canMove { editor?.reschedule(event, Timetable.moved(original, byDays: 1, calendar: calendar)) }
             }
-            .accessibilityAction(named: Text("Delete")) { if editor?.canDelete == true { editor?.delete(event) } }
+            .accessibilityAction(named: Text("Delete", bundle: .module)) { if editor?.canDelete == true { editor?.delete(event) } }
             #if os(tvOS) || os(watchOS)
             .sheet(isPresented: $isShowing) { detailView }
             #else
@@ -140,14 +140,14 @@ enum Spoken {
         if event.isAllDay {
             let last = event.end > event.start ? event.end.addingTimeInterval(-1) : event.start
             parts = calendar.isDate(event.start, inSameDayAs: last)
-                ? [day(event.start), String(localized: "all day")]
-                : [String(localized: "\(day(event.start)) to \(day(last))"), String(localized: "all day")]
+                ? [day(event.start), String(localized: "all day", bundle: .module)]
+                : [String(localized: "\(day(event.start)) to \(day(last))", bundle: .module), String(localized: "all day", bundle: .module)]
         } else if calendar.isDate(event.start, inSameDayAs: event.end) || event.end <= event.start {
-            parts = [day(event.start), String(localized: "\(time(event.start)) to \(time(event.end))")]
+            parts = [day(event.start), String(localized: "\(time(event.start)) to \(time(event.end))", bundle: .module)]
         } else {
-            parts = [String(localized: "\(day(event.start)) \(time(event.start)) to \(day(event.end)) \(time(event.end))")]
+            parts = [String(localized: "\(day(event.start)) \(time(event.start)) to \(day(event.end)) \(time(event.end))", bundle: .module)]
         }
-        if event.isRecurring { parts.append(String(localized: "repeats")) }
+        if event.isRecurring { parts.append(String(localized: "repeats", bundle: .module)) }
         return parts.joined(separator: ", ")
     }
 }

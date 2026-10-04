@@ -98,9 +98,9 @@ public struct StayPicker: View {
 
     private var Summary: some View {
         HStack(spacing: 0) {
-            Field(label: String(localized: "Check-in"), value: selection.map { long($0.checkIn) }, active: selection == nil)
+            Field(label: String(localized: "Check-in", bundle: .module), value: selection.map { long($0.checkIn) }, active: selection == nil)
             Image(systemName: "arrow.right").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 8)
-            Field(label: String(localized: "Check-out"),
+            Field(label: String(localized: "Check-out", bundle: .module),
                   value: selection.flatMap { $0.nightCount > 0 ? long($0.checkOut) : nil },
                   active: selection?.nightCount == 0)
         }
@@ -110,7 +110,7 @@ public struct StayPicker: View {
     private func Field(label: String, value: String?, active: Bool) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-            Text(value ?? String(localized: "Add date"))
+            Text(value ?? String(localized: "Add date", bundle: .module))
                 .font(.subheadline.weight(value == nil ? .regular : .semibold))
                 .foregroundStyle(value == nil ? .secondary : .primary)
         }
@@ -133,16 +133,16 @@ public struct StayPicker: View {
                     }
                 }
             } else {
-                Text(selection == nil ? String(localized: "Choose your check-in date") : String(localized: "Choose your check-out date"))
+                Text(selection == nil ? String(localized: "Choose your check-in date", bundle: .module) : String(localized: "Choose your check-out date", bundle: .module))
                     .font(.subheadline).foregroundStyle(.secondary)
                 if rules.minimumNights > 1 {
-                    Text("·").foregroundStyle(.secondary)
-                    Text(String(localized: "Minimum \(rules.minimumNights) nights")).font(.subheadline).foregroundStyle(.secondary)
+                    Text("·", bundle: .module).foregroundStyle(.secondary)
+                    Text(String(localized: "Minimum \(rules.minimumNights) nights", bundle: .module)).font(.subheadline).foregroundStyle(.secondary)
                 }
             }
             Spacer()
             if selection != nil {
-                Button(String(localized: "Clear dates")) { selection = nil }.buttonStyle(.borderless)
+                Button(String(localized: "Clear dates", bundle: .module)) { selection = nil }.buttonStyle(.borderless)
             }
         }
         .padding()
@@ -193,8 +193,8 @@ public struct StayPicker: View {
         .buttonStyle(.plain)
         .disabled(!enabled && !ends)
         .accessibilityLabel(Text(long(day)))
-        .accessibilityValue(Text(isStart ? String(localized: "Check-in") : isEnd ? String(localized: "Check-out")
-                                 : enabled ? (price ?? "") : String(localized: "Unavailable")))
+        .accessibilityValue(Text(isStart ? String(localized: "Check-in", bundle: .module) : isEnd ? String(localized: "Check-out", bundle: .module)
+                                 : enabled ? (price ?? "") : String(localized: "Unavailable", bundle: .module)))
     }
 
     // MARK: - Choosing
@@ -224,13 +224,16 @@ public struct StayPicker: View {
     }
 
     private func nights(_ count: Int) -> String {
-        count == 1 ? String(localized: "1 night") : String(localized: "\(count) nights")
+        String(localized: "\(count) nights", bundle: .module)
     }
 
     private func breakdown(_ quote: StayQuote) -> String {
         var parts = [nights(quote.nights.count)]
-        if let discount = quote.discount { parts.append(String(localized: "\(discount.percent.formatted())% off")) }
-        if quote.perStayFee > 0 { parts.append(String(localized: "\(money(quote.perStayFee)) fee")) }
+        if let discount = quote.discount {
+            let percent = (discount.percent / 100).formatted(.percent.precision(.fractionLength(0...1)))
+            parts.append(String(localized: "\(percent) off", bundle: .module))
+        }
+        if quote.perStayFee > 0 { parts.append(String(localized: "\(money(quote.perStayFee)) fee", bundle: .module)) }
         return parts.joined(separator: " · ")
     }
 }

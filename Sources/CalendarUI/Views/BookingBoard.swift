@@ -107,7 +107,7 @@ public struct BookingBoard<Resource: Hashable, Event: CalendarEvent, Label: View
                 Text(calendar.rangeTitle(days))
                     .font(.title3.weight(.semibold))
                 Spacer()
-                Button("Today") { withAnimation(.snappy) { date = .now } }
+                Button(String(localized: "Today", bundle: .module)) { withAnimation(.snappy) { date = .now } }
                     .buttonStyle(.plain)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.tint)
@@ -232,7 +232,7 @@ public struct BookingBoard<Resource: Hashable, Event: CalendarEvent, Label: View
                 let first = days[min(a, b)], last = days[max(a, b)]
                 sweep = nil
                 let stay = DateInterval(start: first, end: calendar.date(byAdding: .day, value: 1, to: last) ?? last)
-                recordingUndo(undo, String(localized: "New Booking")) { onCreate?(row.resource, stay) }
+                recordingUndo(undo, String(localized: "New Booking", bundle: .module)) { onCreate?(row.resource, stay) }
             }
             if let sweep, sweep.row == index {
                 let lo = CGFloat(min(sweep.from, sweep.to)), hi = CGFloat(max(sweep.from, sweep.to) + 1)
@@ -273,7 +273,7 @@ public struct BookingBoard<Resource: Hashable, Event: CalendarEvent, Label: View
                                     let original = DateInterval(start: placed.event.start, end: max(placed.event.end, placed.event.start))
                                     let checkout = calendar.date(byAdding: .day, value: days, to: original.end) ?? original.end
                                     let earliest = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: original.start)) ?? original.end
-                                    recordingUndo(undo, String(localized: "Change Checkout")) {
+                                    recordingUndo(undo, String(localized: "Change Checkout", bundle: .module)) {
                                         onMove?(placed.event, row.resource, DateInterval(start: original.start, end: max(checkout, earliest)))
                                     }
                                 }
@@ -291,7 +291,7 @@ public struct BookingBoard<Resource: Hashable, Event: CalendarEvent, Label: View
                         drag = nil
                         guard days != 0 || landed != index else { return }
                         let original = DateInterval(start: placed.event.start, end: max(placed.event.end, placed.event.start))
-                        recordingUndo(undo, String(localized: "Move Booking")) {
+                        recordingUndo(undo, String(localized: "Move Booking", bundle: .module)) {
                             onMove?(placed.event, rows[landed].resource, Timetable.moved(original, byDays: days, calendar: calendar))
                         }
                     }
@@ -382,11 +382,6 @@ enum BoardText {
     static func length<E: CalendarEvent>(of event: E, nights: Bool, calendar: Calendar) -> String {
         let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: event.start), to: calendar.startOfDay(for: event.end)).day ?? 0
         let count = max(days, 1)
-        switch (nights, count) {
-        case (true, 1): return String(localized: "1 night")
-        case (true, _): return String(localized: "\(count) nights")
-        case (false, 1): return String(localized: "1 day")
-        case (false, _): return String(localized: "\(count) days")
-        }
+        return nights ? String(localized: "\(count) nights", bundle: .module) : String(localized: "\(count) days", bundle: .module)
     }
 }

@@ -73,7 +73,7 @@ public struct EventDetailView<Extra: View>: View {
             let when = calendar.isDate(start, inSameDayAs: lastDay)
                 ? longDay(start)
                 : "\(calendar.format(start) { $0.day().month(.abbreviated) }) – \(calendar.format(lastDay) { $0.day().month(.abbreviated).year() })"
-            return (when, days == 1 ? String(localized: "All day") : String(localized: "\(days) days, all day"))
+            return (when, days == 1 ? String(localized: "All day", bundle: .module) : String(localized: "\(days) days, all day", bundle: .module))
         }
         let length = Duration.seconds(max(end.timeIntervalSince(start), 0))
             .formatted(.units(allowed: [.days, .hours, .minutes], width: .abbreviated))

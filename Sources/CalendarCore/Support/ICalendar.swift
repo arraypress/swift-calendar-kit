@@ -157,10 +157,10 @@ enum ICSReader {
 
         for (index, block) in blocks.enumerated() {
             func first(_ key: String) -> ContentLine? { block.first { $0.name == key } }
-            let title = first("SUMMARY")?.text ?? String(localized: "Untitled")
+            let title = first("SUMMARY")?.text ?? String(localized: "Untitled", bundle: .module)
             let uid = first("UID")?.text ?? "event-\(index + 1)"
             guard let startLine = first("DTSTART"), let start = moment(startLine, calendar: calendar) else {
-                warnings.append(String(localized: "\(title): no readable start time, so it was left out"))
+                warnings.append(String(localized: "\(title): no readable start time, so it was left out", bundle: .module))
                 continue
             }
             let end: Date = {
@@ -181,7 +181,7 @@ enum ICSReader {
                 continue
             }
             if cancelled {
-                warnings.append(String(localized: "\(title): cancelled, so it was left out"))
+                warnings.append(String(localized: "\(title): cancelled, so it was left out", bundle: .module))
                 continue
             }
 
@@ -191,7 +191,7 @@ enum ICSReader {
                 do {
                     rule = try RecurrenceRule(parsing: ruleLines.map(\.raw).joined(separator: "\n"))
                 } catch {
-                    warnings.append(String(localized: "\(title): its repeat rule could not be used (\(error.localizedDescription)), so it was imported as a single event"))
+                    warnings.append(String(localized: "\(title): its repeat rule could not be used (\(error.localizedDescription)), so it was imported as a single event", bundle: .module))
                 }
             }
             masters.append(ICalendarEvent(id: uid, title: title, start: start.date, end: end, isAllDay: start.isDay, recurrence: rule,

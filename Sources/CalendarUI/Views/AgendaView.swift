@@ -37,7 +37,7 @@ public struct AgendaView<Event: CalendarEvent, Row: View>: View {
                 Text(calendar.rangeTitle(days))
                     .font(.title3.weight(.semibold))
                 Spacer()
-                Button("Today") { withAnimation(.snappy) { date = .now } }
+                Button(String(localized: "Today", bundle: .module)) { withAnimation(.snappy) { date = .now } }
                     .buttonStyle(.plain)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.tint)
@@ -104,8 +104,8 @@ public struct AgendaRow: View {
     public init<Event: CalendarEvent>(_ entry: AgendaEntry<Event>, calendar: Calendar = .current, title: String, tint: Color) {
         let time = { (date: Date) in calendar.format(date) { $0.hour().minute() } }
         if entry.isAllDay {
-            times = (String(localized: "All day"),
-                     entry.eventDayCount > 1 ? String(localized: "Day \(entry.dayOfEvent) of \(entry.eventDayCount)") : nil)
+            times = (String(localized: "All day", bundle: .module),
+                     entry.eventDayCount > 1 ? String(localized: "Day \(entry.dayOfEvent) of \(entry.eventDayCount)", bundle: .module) : nil)
         } else {
             times = (entry.continuesFromPreviousDay ? "…" : time(entry.start),
                      entry.continuesToNextDay ? "…" : time(entry.end))
@@ -148,14 +148,14 @@ private struct DayHeading: View {
         let today = calendar.isToday(day)
         HStack(spacing: 6) {
             if today {
-                Text("Today").foregroundStyle(style.todayColor)
+                Text("Today", bundle: .module).foregroundStyle(style.todayColor)
             } else if calendar.isDateInTomorrow(day) {
-                Text("Tomorrow")
+                Text("Tomorrow", bundle: .module)
             } else if calendar.isDateInYesterday(day) {
-                Text("Yesterday")
+                Text("Yesterday", bundle: .module)
             }
             if today || calendar.isDateInTomorrow(day) || calendar.isDateInYesterday(day) {
-                Text("·").foregroundStyle(.secondary)
+                Text("·", bundle: .module).foregroundStyle(.secondary)
             }
             Text(calendar.format(day) { $0.weekday(.wide).day().month(.wide) })
                 .foregroundStyle(today ? AnyShapeStyle(style.todayColor) : AnyShapeStyle(.primary))

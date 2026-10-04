@@ -13,11 +13,11 @@ public struct OpeningHoursCard: View {
     private let calendar: Calendar
     private let title: String
 
-    /// A card for some opening hours.
-    public init(_ hours: OpeningHours, title: String = String(localized: "Opening hours"), calendar: Calendar = .current) {
+    /// A card for some opening hours, titled "Opening hours" unless given a title.
+    public init(_ hours: OpeningHours, title: String? = nil, calendar: Calendar = .current) {
         self.hours = hours
         self.calendar = calendar
-        self.title = title
+        self.title = title ?? String(localized: "Opening hours", bundle: .module)
     }
 
     public var body: some View {
@@ -33,7 +33,7 @@ public struct OpeningHoursCard: View {
                 }
                 Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 6) {
                     let today = DayMathBridge.weekday(of: context.date, in: calendar)
-                    ForEach(Timetable.summary(hours, calendar: calendar, closedLabel: String(localized: "Closed"))) { line in
+                    ForEach(Timetable.summary(hours, calendar: calendar, closedLabel: String(localized: "Closed", bundle: .module))) { line in
                         let isToday = line.days.contains(today)
                         GridRow {
                             Text(line.dayLabel)
@@ -55,15 +55,15 @@ public struct OpeningHoursCard: View {
         let ahead = Timetable.openIntervals(hours, from: today, through: today.adding(days: 8), calendar: calendar)
         let time = { (date: Date) in calendar.format(date) { $0.hour().minute() } }
         if let current = ahead.first(where: { $0.start <= now && now < $0.end }) {
-            return (true, String(localized: "Open · closes \(time(current.end))"))
+            return (true, String(localized: "Open · closes \(time(current.end))", bundle: .module))
         }
         if let next = ahead.first(where: { $0.start > now }) {
             let when = calendar.isDate(next.start, inSameDayAs: now)
                 ? time(next.start)
                 : calendar.format(next.start) { $0.weekday(.abbreviated) } + " " + time(next.start)
-            return (false, String(localized: "Closed · opens \(when)"))
+            return (false, String(localized: "Closed · opens \(when)", bundle: .module))
         }
-        return (false, String(localized: "Closed"))
+        return (false, String(localized: "Closed", bundle: .module))
     }
 }
 
