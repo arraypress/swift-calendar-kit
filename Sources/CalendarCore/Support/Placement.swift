@@ -8,6 +8,29 @@
 
 import Foundation
 
+extension Timetable {
+
+    /// A day's all-day events, and its timed events placed on the timeline.
+    ///
+    /// - Parameter minimumDuration: the shortest an event is drawn — and so
+    ///   the space it claims when deciding what overlaps. Pass the time your
+    ///   smallest readable tile represents, or 0.
+    public static func layout<E: CalendarEvent>(_ events: [E], on date: Date, calendar: Calendar = .current,
+                                                minimumDuration: TimeInterval = 0) -> DayLayout<E> {
+        Placement.day(events, on: date, in: calendar, minimumDuration: minimumDuration)
+    }
+
+    /// Bars for events across a row of consecutive days, stacked in lanes.
+    ///
+    /// Pass the all-day events for a week view's top strip, or everything for
+    /// a month row. With `maximumLanes`, events that do not fit are counted in
+    /// ``LaneLayout/hidden`` instead.
+    public static func lanes<E: CalendarEvent>(_ events: [E], across days: [Date], calendar: Calendar = .current,
+                                               maximumLanes: Int? = nil) -> LaneLayout<E> {
+        Placement.lanes(events, across: days, in: calendar, maximumLanes: maximumLanes)
+    }
+}
+
 enum Placement {
 
     // MARK: - A day's timeline

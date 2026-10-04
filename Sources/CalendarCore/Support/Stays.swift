@@ -8,7 +8,57 @@
 
 import Foundation
 
+extension Timetable {
+
+    /// Whether a stay can be booked, and if not the first reason: bad
+    /// dates, then too short (a season's minimum counts, judged by the
+    /// check-in night), then too long, then clashes.
+    public static func check(_ stay: Stay, against booked: [Stay] = [], rules: StayRules = StayRules(),
+                             rates: NightlyRates? = nil) -> StayCheck {
+        Stays.check(stay, against: booked, rules: rules, rates: rates)
+    }
+
+    /// Every night already taken.
+    public static func bookedNights(_ stays: [Stay]) -> Set<CalendarDay> {
+        Stays.bookedNights(stays)
+    }
+
+    /// The days from `first` to `last` a guest could check in for at least
+    /// the minimum stay — the enabled days of a check-in picker.
+    public static func checkInDays(from first: CalendarDay, through last: CalendarDay, booked: [Stay],
+                                   rules: StayRules = StayRules(), rates: NightlyRates? = nil) -> [CalendarDay] {
+        Stays.checkInDays(from: first, through: last, booked: booked, rules: rules, rates: rates)
+    }
+
+    /// The check-out days that make a bookable stay from a check-in — the
+    /// enabled days once the first date is picked. Without a maximum stay it
+    /// looks `searchLimit` nights ahead.
+    public static func checkOutDays(after checkIn: CalendarDay, booked: [Stay], rules: StayRules = StayRules(),
+                                    rates: NightlyRates? = nil, searchLimit: Int = 365) -> [CalendarDay] {
+        Stays.checkOutDays(after: checkIn, booked: booked, rules: rules, rates: rates, searchLimit: searchLimit)
+    }
+
+    /// A stay priced night by night.
+    public static func quote(_ stay: Stay, rates: NightlyRates) -> StayQuote {
+        Stays.quote(stay, rates: rates)
+    }
+}
+
 enum Stays {
+
+    static func nightCount(_ stay: Stay) -> Int {
+        stay.checkIn.days(until: stay.checkOut)
+    }
+
+    static func nights(of stay: Stay) -> [CalendarDay] {
+        let count = nightCount(stay)
+        return count > 0 ? (0..<count).map { stay.checkIn.adding(days: $0) } : []
+    }
+
+    /// Later seasons win where two overlap, so a Christmas week sits on a winter season.
+    static func season(for night: CalendarDay, in rates: NightlyRates) -> Season? {
+        rates.seasons.last { $0.from <= night && night <= $0.through }
+    }
 
     static func minimumNights(for checkIn: CalendarDay, rules: StayRules, rates: NightlyRates?) -> Int {
         max(rules.minimumNights, rates?.season(for: checkIn)?.minimumNights ?? 0, 1)

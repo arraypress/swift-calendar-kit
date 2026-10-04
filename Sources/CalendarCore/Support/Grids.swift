@@ -8,6 +8,34 @@
 
 import Foundation
 
+extension Timetable {
+
+    /// The month containing a date, as rows of whole weeks.
+    public static func month(containing date: Date, calendar: Calendar = .current, rows: GridRows = .fitted) -> MonthGrid {
+        Grids.month(containing: date, in: calendar, rows: rows)
+    }
+
+    /// Every month of the year containing a date.
+    public static func year(containing date: Date, calendar: Calendar = .current, rows: GridRows = .fitted) -> [MonthGrid] {
+        Grids.year(containing: date, in: calendar, rows: rows)
+    }
+
+    /// The seven days of the week containing a date, from the calendar's first weekday.
+    public static func week(containing date: Date, calendar: Calendar = .current) -> [Date] {
+        Grids.week(containing: date, in: calendar)
+    }
+
+    /// `count` consecutive days from a date's day — a three-day view, say.
+    public static func days(from date: Date, count: Int, calendar: Calendar = .current) -> [Date] {
+        Grids.days(from: date, count: count, in: calendar)
+    }
+
+    /// Weekday names in the order the calendar's week runs, in its locale.
+    public static func weekdaySymbols(calendar: Calendar = .current, style: WeekdayStyle = .short) -> [String] {
+        Grids.weekdaySymbols(in: calendar, style: style)
+    }
+}
+
 enum Grids {
 
     static func month(containing date: Date, in calendar: Calendar, rows: GridRows) -> MonthGrid {

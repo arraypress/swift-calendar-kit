@@ -1,5 +1,5 @@
 //
-//  Swipe.swift
+//  View+Swipe.swift
 //  CalendarUI
 //
 //  Swiping between periods. Apple TV has no drag gesture; there the arrow

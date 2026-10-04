@@ -12,7 +12,7 @@ import Foundation
 /// stored as this, it stays the 4th. Always Gregorian. A ``Calendar`` passed
 /// to ``init(_:in:)`` or ``date(in:)`` only decides the time zone, which is
 /// what says which day an instant belongs to.
-public struct CalendarDay: Sendable, Hashable, Codable, Comparable, CustomStringConvertible {
+public struct CalendarDay: Sendable, Hashable, Codable {
 
     /// The year.
     public let year: Int
@@ -43,34 +43,5 @@ public struct CalendarDay: Sendable, Hashable, Codable, Comparable, CustomString
         self.year = year
         self.month = month
         self.day = day
-    }
-
-    /// The first instant of this day in a calendar's time zone.
-    public func date(in calendar: Calendar = .current) -> Date {
-        DayMath.start(of: self, in: calendar.timeZone)
-    }
-
-    /// The day `count` days later, or earlier when negative.
-    public func adding(days count: Int) -> CalendarDay {
-        DayMath.adding(count, to: self)
-    }
-
-    /// Whole days from this one to another; negative when `other` is earlier.
-    public func days(until other: CalendarDay) -> Int {
-        DayMath.distance(from: self, to: other)
-    }
-
-    /// The day of the week.
-    public var weekday: Locale.Weekday {
-        DayMath.weekday(of: self)
-    }
-
-    /// `2026-09-04`.
-    public var description: String {
-        String(format: "%04d-%02d-%02d", year, month, day)
-    }
-
-    public static func < (lhs: CalendarDay, rhs: CalendarDay) -> Bool {
-        (lhs.year, lhs.month, lhs.day) < (rhs.year, rhs.month, rhs.day)
     }
 }

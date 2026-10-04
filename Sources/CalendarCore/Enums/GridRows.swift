@@ -14,16 +14,3 @@ public enum GridRows: Sendable, Hashable {
     /// Always six, so swiping between months never changes the view's height.
     case six
 }
-
-/// How long a weekday's name is.
-public enum WeekdayStyle: Sendable, Hashable {
-
-    /// `M`
-    case narrow
-
-    /// `Mon`
-    case short
-
-    /// `Monday`
-    case full
-}

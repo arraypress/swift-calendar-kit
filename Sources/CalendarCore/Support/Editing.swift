@@ -9,19 +9,6 @@
 
 import Foundation
 
-/// Which occurrences of a repeating event an edit applies to.
-public enum EditScope: String, Sendable, Hashable, CaseIterable {
-
-    /// Only the occurrence acted on.
-    case thisEvent
-
-    /// The occurrence acted on and every later one.
-    case thisAndFollowing
-
-    /// The whole series.
-    case allEvents
-}
-
 enum Edits {
 
     /// Seconds since the day's first instant, snapped to the nearest multiple
@@ -48,6 +35,17 @@ enum Edits {
     static func resized(_ interval: DateInterval, end proposed: Date, snap: TimeInterval, minimum: TimeInterval, in calendar: Calendar) -> DateInterval {
         let end = snapped(proposed, to: snap, in: calendar)
         return DateInterval(start: interval.start, end: max(end, interval.start.addingTimeInterval(max(minimum, snap, 1))))
+    }
+
+    /// A rule with a new count, end and exceptions, every other part kept.
+    /// ChronoKit's rules are values with every part fixed at creation, so an
+    /// edit is a rebuild.
+    static func rule(_ rule: RecurrenceRule, count: Int?, until: Date?, exceptions: Set<Date>) -> RecurrenceRule {
+        (try? RecurrenceRule(
+            frequency: rule.frequency, interval: rule.interval, byDay: rule.byDay, byMonthDay: rule.byMonthDay, byMonth: rule.byMonth,
+            bySetPos: rule.bySetPos, count: count, until: until, weekStart: rule.weekStart,
+            businessDayOrdinal: rule.businessDayOrdinal, exceptions: exceptions, additions: rule.additions
+        )) ?? rule
     }
 
     static func span(from a: Date, to b: Date, snap: TimeInterval, in calendar: Calendar) -> DateInterval {
@@ -86,48 +84,5 @@ extension Timetable {
     public static func span(from start: Date, to end: Date, snap: TimeInterval = 15 * 60,
                             calendar: Calendar = .current) -> DateInterval {
         Edits.span(from: start, to: end, snap: snap, in: calendar)
-    }
-}
-
-extension RecurrenceRule {
-
-    /// This rule without the occurrence on `date`'s day — "delete this
-    /// event" and the first half of "move this event".
-    public func skipping(_ date: Date) -> RecurrenceRule {
-        rebuilt { $0.exceptions.insert(date) }
-    }
-
-    /// This rule ending before `date` — "delete this and following". Keeps
-    /// everything up to the occurrence before; a count becomes an end date.
-    public func ending(before date: Date) -> RecurrenceRule {
-        rebuilt {
-            $0.count = nil
-            $0.until = date.addingTimeInterval(-1)
-        }
-    }
-
-    /// This rule with no count or end — for the new series "this and
-    /// following" starts, which should not inherit a count of the old one's.
-    public var unending: RecurrenceRule {
-        rebuilt {
-            $0.count = nil
-            $0.until = nil
-        }
-    }
-
-    private struct Parts {
-        var count: Int?
-        var until: Date?
-        var exceptions: Set<Date>
-    }
-
-    private func rebuilt(_ change: (inout Parts) -> Void) -> RecurrenceRule {
-        var parts = Parts(count: count, until: until, exceptions: exceptions)
-        change(&parts)
-        return (try? RecurrenceRule(
-            frequency: frequency, interval: interval, byDay: byDay, byMonthDay: byMonthDay, byMonth: byMonth,
-            bySetPos: bySetPos, count: parts.count, until: parts.until, weekStart: weekStart,
-            businessDayOrdinal: businessDayOrdinal, exceptions: parts.exceptions, additions: additions
-        )) ?? self
     }
 }

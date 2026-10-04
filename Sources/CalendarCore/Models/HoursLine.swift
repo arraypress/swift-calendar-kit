@@ -21,9 +21,6 @@ public struct HoursLine: Sendable, Hashable, Identifiable {
     /// two windows joined with a comma, or the closed label.
     public let hoursLabel: String
 
-    /// Whether the days are closed.
-    public var isClosed: Bool { windows.isEmpty }
-
     /// Identified by its first day.
     public var id: Locale.Weekday { days[0] }
 }

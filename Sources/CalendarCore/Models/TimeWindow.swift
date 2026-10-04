@@ -10,7 +10,7 @@ import Foundation
 /// Never crosses midnight. A bar open 20:00 to 02:00 is two windows on two
 /// days, because the 02:00 half belongs to the next day's closures and the
 /// next day's weekday.
-public struct TimeWindow: Sendable, Hashable, Codable, CustomStringConvertible {
+public struct TimeWindow: Sendable, Hashable, Codable {
 
     /// When it opens.
     public let opens: DayTime
@@ -32,10 +32,4 @@ public struct TimeWindow: Sendable, Hashable, Codable, CustomStringConvertible {
     public init(_ opens: String, _ closes: String) throws(TimetableError) {
         try self.init(opens: try DayTime(opens), closes: try DayTime(closes))
     }
-
-    /// The whole day, 00:00 to 24:00.
-    public static let allDay = try! TimeWindow(opens: .startOfDay, closes: .endOfDay)
-
-    /// `09:00–17:30`.
-    public var description: String { "\(opens)–\(closes)" }
 }

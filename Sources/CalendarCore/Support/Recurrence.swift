@@ -9,6 +9,26 @@
 
 import Foundation
 
+extension Timetable {
+
+    /// Repeating events turned into their occurrences within a range, ready
+    /// for any view. One-off events come through as a single occurrence.
+    ///
+    /// Expand over the stretch a view can show — a few months either side of
+    /// today is cheap — rather than per screen.
+    public static func expand<E: RecurringEvent>(_ events: [E], in range: DateInterval,
+                                                 calendar: Calendar = .current) -> [Occurrence<E>] {
+        Recurrence.expand(events, in: range, calendar: calendar)
+    }
+
+    /// When a repeating series happens within a range: one interval per
+    /// occurrence, keeping the first occurrence's wall-clock time.
+    public static func occurrences(of rule: RecurrenceRule, start: Date, end: Date, isAllDay: Bool = false,
+                                   in range: DateInterval, calendar: Calendar = .current) -> [DateInterval] {
+        Recurrence.occurrences(of: rule, start: start, end: end, isAllDay: isAllDay, in: range, calendar: calendar)
+    }
+}
+
 enum Recurrence {
 
     /// Every occurrence of a series that overlaps `range`, in order.

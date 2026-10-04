@@ -17,9 +17,6 @@ public struct MonthGrid: Sendable, Hashable, Identifiable {
 
     /// Identified by the month's first instant.
     public var id: Date { month.start }
-
-    /// Every box, row by row.
-    public var days: [GridDay] { weeks.flatMap { $0 } }
 }
 
 /// One box in a ``MonthGrid``.

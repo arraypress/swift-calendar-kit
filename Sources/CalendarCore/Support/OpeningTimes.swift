@@ -7,7 +7,26 @@
 
 import Foundation
 
+extension Timetable {
+
+    /// The open stretches from one day to another, inclusive, as instants in
+    /// the calendar's time zone.
+    public static func openIntervals(_ hours: OpeningHours, from first: CalendarDay, through last: CalendarDay,
+                                     calendar: Calendar = .current) -> [DateInterval] {
+        OpeningTimes.intervals(hours, from: first, through: last, in: calendar.timeZone)
+    }
+}
+
 enum OpeningTimes {
+
+    static func weekly(_ windows: [TimeWindow], on days: Set<Locale.Weekday>) -> [Locale.Weekday: [TimeWindow]] {
+        Dictionary(uniqueKeysWithValues: days.map { ($0, windows) })
+    }
+
+    /// A day's windows: its exception if it has one, otherwise its weekday's.
+    static func windows(_ hours: OpeningHours, on day: CalendarDay) -> [TimeWindow] {
+        (hours.exceptions[day] ?? hours.weekly[day.weekday] ?? []).sorted { $0.opens < $1.opens }
+    }
 
     /// Every open interval from `first` to `last` inclusive, in order.
     static func intervals(_ hours: OpeningHours, from first: CalendarDay, through last: CalendarDay, in zone: TimeZone) -> [DateInterval] {

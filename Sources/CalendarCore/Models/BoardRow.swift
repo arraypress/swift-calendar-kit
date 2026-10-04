@@ -24,11 +24,6 @@ public struct BoardRow<Resource: Hashable, Event: CalendarEvent>: Identifiable {
     /// The days, as indices, where two or more bookings overlap.
     public let clashingDays: [Int]
 
-    /// The share of the days with something booked, 0 to 1.
-    public var occupancy: Double {
-        isFree.isEmpty ? 0 : Double(isFree.filter { !$0 }.count) / Double(isFree.count)
-    }
-
     /// Identified by the resource.
     public var id: Resource { resource }
 }

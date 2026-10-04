@@ -1,5 +1,5 @@
 //
-//  Formatting.swift
+//  Calendar+Format.swift
 //  CalendarUI
 //
 //  Dates written in the calendar's own locale and zone, not the device's —

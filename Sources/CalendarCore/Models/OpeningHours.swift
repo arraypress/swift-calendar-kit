@@ -27,22 +27,6 @@ public struct OpeningHours: Sendable, Hashable, Codable {
 
     /// The same windows on each of the days named.
     public init(_ windows: [TimeWindow], on days: Set<Locale.Weekday>) {
-        self.init(weekly: Dictionary(uniqueKeysWithValues: days.map { ($0, windows) }))
+        self.init(weekly: OpeningTimes.weekly(windows, on: days))
     }
-
-    /// The windows on one day, earliest first, with any exception applied.
-    public func windows(on day: CalendarDay) -> [TimeWindow] {
-        (exceptions[day] ?? weekly[day.weekday] ?? []).sorted { $0.opens < $1.opens }
-    }
-
-    /// Whether the place opens at all on a day.
-    public func isOpen(on day: CalendarDay) -> Bool {
-        !windows(on: day).isEmpty
-    }
-
-    /// Monday to Friday.
-    public static let weekdays: Set<Locale.Weekday> = [.monday, .tuesday, .wednesday, .thursday, .friday]
-
-    /// Every day of the week.
-    public static let everyDay: Set<Locale.Weekday> = Set(DayMath.weekdays)
 }

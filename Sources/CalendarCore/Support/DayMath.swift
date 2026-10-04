@@ -49,6 +49,14 @@ enum DayMath {
         utc.dateComponents([.day], from: start(of: a, in: utc.timeZone), to: start(of: b, in: utc.timeZone)).day!
     }
 
+    static func precedes(_ a: CalendarDay, _ b: CalendarDay) -> Bool {
+        (a.year, a.month, a.day) < (b.year, b.month, b.day)
+    }
+
+    static func text(_ day: CalendarDay) -> String {
+        String(format: "%04d-%02d-%02d", day.year, day.month, day.day)
+    }
+
     static func weekday(of day: CalendarDay) -> Locale.Weekday {
         weekdays[utc.component(.weekday, from: start(of: day, in: utc.timeZone)) - 1]
     }

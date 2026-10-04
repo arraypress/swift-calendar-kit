@@ -70,7 +70,7 @@ length, a range sees occurrences already running when it opens, and expansion ru
 calendar you pass, so each user's own zone. `phrase(from:)` fills in what a rule leaves to its
 first occurrence: "every week" becomes "Every Monday".
 
-## Every call takes a calendar## Every call takes a calendar
+## Every call takes a calendar
 
 There is no shared setting. A US calendar's week starts on Sunday and a UK one's on Monday; which
 day an instant falls on depends on the zone. Pass `Calendar.current` from a view and the user
@@ -168,6 +168,62 @@ answer needs. The views never change your data — your closures do. The booking
 `onMove` (other days, another resource, or a new checkout from the bar's right edge) and
 `onCreate` (free days swept out in a row). Repeating events carry a ↻ wherever they appear.
 
+With an event selected, arrow keys nudge it — up and down by the snap, left and right by a day —
+Escape deselects, and copy, cut, paste (`onCopy`) and duplicate (Cmd-D) work from the keyboard,
+the Edit menu and the context menu; a paste lands on the time or day last clicked. Month-view
+events drag across days and down into other weeks. Add `.calendarUndo($events)` and every edit
+is undoable by restoring the collection it changed, so undo works whatever your closures did.
+
+`.calendarConflicts(buffer:sameGroup:)` outlines timed events that overlap, or come closer than
+the buffer, among those that compete — the same room, the same person. Day and week views take
+`hours:` to shade closed hours and `secondTimeZone:` for a second column of hour labels.
+
+### Pickers
+
+```swift
+StayPicker(selection: $stay, booked: stays, rules: StayRules(minimumNights: 2), rates: rates, currencyCode: "GBP")
+SlotPicker(date: $day, selection: $slot, resources: staff, name: \.name, hours: \.shifts,
+           busy: appointments, length: 30 * 60, every: 15 * 60, buffer: 10 * 60)
+OpeningHoursCard(hours)
+```
+
+`StayPicker` is check-in then check-out over scrolling months: days that cannot start or end a
+bookable stay greyed out, each night's price, a running total with seasons, discounts and the fee.
+`SlotPicker` is a strip of days and the chosen day's free slots by morning, afternoon and evening,
+across several resources with "anyone" or a chosen one. `OpeningHoursCard` says whether a place
+is open now and shows the week at a glance.
+
+## iCalendar files
+
+```swift
+let file = try ICalendar.read(text)              // events, warnings, the calendar's name
+let text = ICalendar.write(events, title: \.title)
+```
+
+Content lines folded and escaped, times as dates, UTC, `TZID` and floating local time,
+`DURATION`, alarms passed over, and `RECURRENCE-ID` overrides — skipped in their series and kept
+as events of their own. A repeat rule that cannot be used is a warning, never a silent drop.
+Repeating events are written in your zone so 09:00 stays 09:00 wherever the file is opened.
+
+## Apple Calendar
+
+`CalendarEventKit` is a separate product, so an app that never touches Apple Calendar never links
+EventKit. `AppleCalendar` reads occurrences as `AppleCalendarEvent` values — one per occurrence,
+in their calendar's colour, with the series' rule — and writes the views' moves, resizes,
+deletes and new events back with the scope the user chose. All-day ends are converted between
+EventKit's 23:59:59 and the views' next midnight. Read-only on watchOS, where EventKit is. Your
+app needs `NSCalendarsFullAccessUsageDescription`.
+
+## Languages
+
+Every string the views show, and every import warning, is in a String Catalog in Spanish,
+French, German, Italian, Portuguese (Brazil), Dutch, Japanese, Korean, Simplified and Traditional
+Chinese, Russian and Arabic, with each language's plural forms. Repeat rules are said in those
+languages too, built per language — Russian's case and gender after "в", Italian's feminine
+Sunday, plural weekdays, Arabic digits — with rarer shapes left in English. Dates and names are
+the system's. A library's translations show only in languages its app declares, so list them in
+your app's localizations. The translations are machine-quality; have them reviewed.
+
 Each timeline view also takes a `tile` closure for your own tile; `EventTile` keeps the
 standard look around any content. Measurements and colours live in one `CalendarStyle`, set with
 `.calendarStyle(_:)`. Every label is written in the calendar's own locale and zone. Swiping moves
@@ -180,11 +236,11 @@ a fixed seed so it looks the same every run.
 ## Requirements
 
 iOS 17, macOS 14, tvOS 17, watchOS 10, visionOS 1. Swift 6. CalendarUI builds on watchOS but
-its views are sized for larger screens.
+its views are sized for larger screens; drags need a pointer or touch, so Apple TV uses buttons.
 
 ## Tested
 
-115 tests, all on fixed dates in fixed zones and locales: month grids from Sunday and Monday,
+141 tests, all on fixed dates in fixed zones and locales: month grids from Sunday and Monday,
 February in four rows and August in six, midnight boxes across the clock change, overlap columns
 and widening, a minimum duration making short events collide, overnight events cut at midnight,
 exclusive all-day ends, 23 and 25 hour lines, lanes with the long bar on top and the overflow
@@ -200,7 +256,10 @@ inclusive ends, skipped days that still count, 09:00 staying 09:00 across the cl
 a series begun in 1990 reaching 2026, RRULE text and words expanding alike, and phrases that
 spell out the day a plain weekly or monthly rule leaves to its first occurrence, and edits:
 drags snapped to the quarter hour, days across the clock change, sweeps in either direction,
-resizes that never collapse, and the skip, end-before and unending series edits.
+resizes that never collapse, and the skip, end-before and unending series edits; clashes with
+and without a buffer and within groups; .ics files folded, escaped, zoned, floating and edited
+occurrence by occurrence, round-tripped field for field; and repeat phrases in twelve languages.
+The EventKit bridge has five more of its own, for what can be checked without calendar access.
 
 ## Licence
 

@@ -42,11 +42,6 @@ public struct NightlyRates: Sendable, Hashable, Codable {
         self.discounts = discounts
         self.perStayFee = perStayFee
     }
-
-    /// The season a night falls in, if any.
-    public func season(for night: CalendarDay) -> Season? {
-        seasons.last { $0.from <= night && night <= $0.through }
-    }
 }
 
 /// A run of nights with their own price, and perhaps their own minimum stay.

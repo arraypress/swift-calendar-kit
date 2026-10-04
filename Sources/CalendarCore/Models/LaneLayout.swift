@@ -41,9 +41,6 @@ public struct LaneBar<Event: CalendarEvent>: Identifiable {
     /// Whether it runs past the row's last day.
     public let continuesAfter: Bool
 
-    /// How many days the bar spans.
-    public var length: Int { lastDay - firstDay + 1 }
-
     /// The event's identity.
     public var id: Event.ID { event.id }
 }

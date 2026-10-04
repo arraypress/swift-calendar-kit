@@ -32,7 +32,7 @@ public struct OpeningHoursCard: View {
                     }
                 }
                 Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 6) {
-                    let today = DayMathBridge.weekday(of: context.date, in: calendar)
+                    let today = CalendarDay(context.date, in: calendar).weekday
                     ForEach(Timetable.summary(hours, calendar: calendar, closedLabel: String(localized: "Closed", bundle: .module))) { line in
                         let isToday = line.days.contains(today)
                         GridRow {
@@ -64,12 +64,5 @@ public struct OpeningHoursCard: View {
             return (false, String(localized: "Closed · opens \(when)", bundle: .module))
         }
         return (false, String(localized: "Closed", bundle: .module))
-    }
-}
-
-/// The weekday of an instant as `Locale.Weekday`, for matching summary lines.
-enum DayMathBridge {
-    static func weekday(of date: Date, in calendar: Calendar) -> Locale.Weekday {
-        CalendarDay(date, in: calendar).weekday
     }
 }

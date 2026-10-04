@@ -7,7 +7,34 @@
 
 import Foundation
 
+extension Timetable {
+
+    /// Events day by day, for a list view. Each event appears on every day it
+    /// touches, cut to that day. Days with nothing on are left out unless
+    /// `includeEmptyDays` is set.
+    public static func agenda<E: CalendarEvent>(_ events: [E], on days: [Date], calendar: Calendar = .current,
+                                                includeEmptyDays: Bool = false) -> [AgendaDay<E>] {
+        Listings.agenda(events, days: days, in: calendar, includeEmptyDays: includeEmptyDays)
+    }
+
+    /// Bookings as rows on a board: one row per resource, in the order given,
+    /// each with its bookings in lanes across the days, its free days, and
+    /// the days it is double-booked.
+    ///
+    /// - Parameter resourceOf: which resource a booking belongs to. Bookings
+    ///   for a resource not in `resources` are left off the board.
+    public static func board<R: Hashable, E: CalendarEvent>(
+        _ events: [E], resources: [R], resourceOf: (E) -> R, across days: [Date], calendar: Calendar = .current
+    ) -> [BoardRow<R, E>] {
+        Listings.board(events, resources: resources, resourceOf: resourceOf, days: days, in: calendar)
+    }
+}
+
 enum Listings {
+
+    static func occupancy(_ isFree: [Bool]) -> Double {
+        isFree.isEmpty ? 0 : Double(isFree.filter { !$0 }.count) / Double(isFree.count)
+    }
 
     static func agenda<E: CalendarEvent>(_ events: [E], days: [Date], in calendar: Calendar, includeEmptyDays: Bool) -> [AgendaDay<E>] {
         days.compactMap { date -> AgendaDay<E>? in

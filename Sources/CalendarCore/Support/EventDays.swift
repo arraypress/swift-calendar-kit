@@ -7,6 +7,21 @@
 
 import Foundation
 
+extension Timetable {
+
+    /// The events touching each day — the dots under a month view's dates.
+    /// All-day first, then by start.
+    public static func events<E: CalendarEvent>(_ events: [E], on days: [Date], calendar: Calendar = .current) -> [[E]] {
+        EventDays.byDay(events, days: days, in: calendar)
+    }
+
+    /// The hour lines of a day's timeline, positioned the same way as
+    /// ``layout(_:on:calendar:minimumDuration:)`` positions events.
+    public static func hourMarks(on date: Date, every hours: Int = 1, calendar: Calendar = .current) -> [HourMark] {
+        EventDays.hourMarks(on: date, every: hours, in: calendar)
+    }
+}
+
 enum EventDays {
 
     /// The stretch of time an event covers. An all-day event whose end is

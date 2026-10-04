@@ -60,12 +60,6 @@ public struct TimedPlacement<Event: CalendarEvent>: Identifiable {
     /// Whether the event runs on into a later day.
     public let continuesToNextDay: Bool
 
-    /// The left edge as a fraction of the day column's width.
-    public var leading: Double { Double(column) / Double(columns) }
-
-    /// The width as a fraction of the day column's width.
-    public var width: Double { Double(span) / Double(columns) }
-
     /// The event's identity.
     public var id: Event.ID { event.id }
 }

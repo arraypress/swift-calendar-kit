@@ -8,6 +8,18 @@
 
 import Foundation
 
+extension Timetable {
+
+    /// Opening hours as week-at-a-glance lines, in the calendar's week order
+    /// and its locale's clock.
+    ///
+    /// - Parameter closedLabel: what a closed day reads; "Closed" in the
+    ///   reader's language unless given.
+    public static func summary(_ hours: OpeningHours, calendar: Calendar = .current, closedLabel: String? = nil) -> [HoursLine] {
+        HoursSummary.lines(hours, in: calendar, closedLabel: closedLabel ?? String(localized: "Closed", bundle: .module))
+    }
+}
+
 enum HoursSummary {
 
     static func lines(_ hours: OpeningHours, in calendar: Calendar, closedLabel: String) -> [HoursLine] {

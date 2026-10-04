@@ -9,6 +9,61 @@
 
 import Foundation
 
+extension Timetable {
+
+    /// The gaps inside some windows that nothing busy covers.
+    ///
+    /// - Parameters:
+    ///   - buffer: kept clear either side of each busy interval.
+    ///   - minimumLength: gaps shorter than this are dropped.
+    public static func freeTime(in windows: [DateInterval], busy: [DateInterval], buffer: TimeInterval = 0,
+                                minimumLength: TimeInterval = 0) -> [DateInterval] {
+        FreeTime.gaps(in: windows, busy: busy, buffer: buffer, minimumLength: minimumLength)
+    }
+
+    /// Bookable slots of a fixed length: one every `step` from the start of
+    /// each window, kept when it fits inside the window and clashes with
+    /// nothing. `step` defaults to the slot's own length.
+    public static func slots(length: TimeInterval, every step: TimeInterval? = nil, in windows: [DateInterval],
+                             busy: [DateInterval] = [], buffer: TimeInterval = 0) -> [DateInterval] {
+        FreeTime.slots(length: length, every: step ?? length, in: windows, busy: busy, buffer: buffer)
+    }
+
+    /// The busy intervals a candidate overlaps, as indices. Touching is not
+    /// overlapping, unless a buffer closes the gap.
+    public static func clashes(_ candidate: DateInterval, with busy: [DateInterval], buffer: TimeInterval = 0) -> [Int] {
+        FreeTime.clashes(candidate, with: busy, buffer: buffer)
+    }
+
+    /// Slots across several resources — rooms, staff, tables — each with
+    /// its own open windows and bookings. A slot is offered when at least
+    /// `minimumFree` resources are free for all of it. A resource with no
+    /// windows is never free.
+    public static func slots<R: Hashable & Sendable>(
+        length: TimeInterval, every step: TimeInterval? = nil, resources: [R],
+        windows: [R: [DateInterval]], busy: [R: [DateInterval]] = [:], buffer: TimeInterval = 0, minimumFree: Int = 1
+    ) -> [ResourceSlot<R>] {
+        FreeTime.resourceSlots(length: length, every: step ?? length, resources: resources, windows: windows,
+                               busy: busy, buffer: buffer, minimumFree: minimumFree)
+    }
+
+    /// The timed events that clash: overlapping another, or closer to one
+    /// than `buffer`, among events `sameGroup` says compete — the same room,
+    /// the same person. All-day events are left out.
+    public static func conflicts<E: CalendarEvent>(_ events: [E], buffer: TimeInterval = 0,
+                                                   sameGroup: (E, E) -> Bool = { _, _ in true }) -> Set<E.ID> {
+        FreeTime.conflicts(events, buffer: buffer, sameGroup: sameGroup)
+    }
+
+    /// The resources free for the whole of a candidate booking, in the order given.
+    public static func freeResources<R: Hashable & Sendable>(
+        for candidate: DateInterval, resources: [R], windows: [R: [DateInterval]], busy: [R: [DateInterval]] = [:],
+        buffer: TimeInterval = 0
+    ) -> [R] {
+        FreeTime.freeResources(for: candidate, resources: resources, windows: windows, busy: busy, buffer: buffer)
+    }
+}
+
 enum FreeTime {
 
     static func overlaps(_ a: DateInterval, _ b: DateInterval) -> Bool {
