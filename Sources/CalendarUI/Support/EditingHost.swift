@@ -9,6 +9,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 extension View {
 

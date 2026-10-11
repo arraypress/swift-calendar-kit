@@ -11,6 +11,7 @@
 import XCTest
 import EventKit
 @testable import CalendarEventKit
+import ChronoKit
 
 @MainActor
 final class AppleCalendarTests: XCTestCase {
